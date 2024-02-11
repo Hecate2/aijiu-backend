@@ -2,7 +2,7 @@ import pytest
 from asgi_lifespan import LifespanManager
 from httpx import AsyncClient
 from main import app
-from models import Org, init_tables, drop_tables
+from models import Org, init_tables, drop_tables, ROOT
 import random
 from dateutil import parser
 import datetime
@@ -16,7 +16,7 @@ def anyio_backend():
 @pytest.fixture(scope="module")
 async def client():
     async with LifespanManager(app):
-        async with AsyncClient(app=app, base_url="http://test/api/v1/") as c:
+        async with AsyncClient(app=app, base_url="http://test/api/v1/", follow_redirects=True) as c:
             yield c
 
 
@@ -24,9 +24,9 @@ async def client():
 async def test_org(client: AsyncClient):  # nosec
     await drop_tables()
     await init_tables()
-    # no initial org
+    # root org only
     response = await client.get("orgs")
-    assert response.status_code == 200 and response.json() == []
+    assert response.status_code == 200 and response.json() == [{'name': ROOT}]
     response = await client.get("orgs/a")
     assert response.status_code == 200 and response.text == 'null' and response.json() == None
     
@@ -41,9 +41,10 @@ async def test_org(client: AsyncClient):  # nosec
 
     # get
     result = (await client.get("orgs")).json()
-    assert len(result) == len(org_names)
+    assert len(result) == len(org_names) + 1
     for org in result:
-        assert org['name'] in org_names
+        if org['name'] != ROOT:
+            assert org['name'] in org_names
     filter = 'Hospital'
     result = (await client.get(f"orgs?filter={filter}")).json()
     for org in result:
@@ -61,11 +62,11 @@ async def test_org(client: AsyncClient):  # nosec
             - datetime.timedelta(hours=8).total_seconds()) < 10
     
     # update
-    assert (await client.put("orgs/test_org")).status_code >= 400
-    await client.put("orgs/test_org/hospitalUpdated")
+    assert (await client.patch("orgs/test_org")).status_code >= 400
+    await client.patch("orgs/test_org/hospitalUpdated")
     assert (await client.get("orgs/test_org")).json() is None
     assert (await client.get("orgs/hospitalUpdated")).json()['name'] == 'hospitalUpdated'
-    assert (await client.put("orgs/test_org/hospitalUpdated")).status_code >= 400
+    assert (await client.patch("orgs/test_org/hospitalUpdated")).status_code >= 400
     
     # delete
     assert (await client.delete("orgs/test_org")).status_code >= 400

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 import datetime
 import os
 from typing import Callable
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, select
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncSession, async_sessionmaker, async_scoped_session
 from sqlalchemy.ext.declarative import declarative_base
@@ -59,14 +59,14 @@ class ClientId(Base):
 
 class User(Base):
     __tablename__ = 'user'
-    username = Column(String(64), primary_key=True)
+    name = Column(String(64), primary_key=True)
     passwd = Column(String(64), nullable=True)  # sha256 result
     org = Column(String, ForeignKey(f"{Org.__tablename__}.{Org.name.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=True)
     org2user = relationship(Org.__name__, backref='user2org')
     datetime = Column(DateTime, default=datetime_utc_8)
 
     def __str__(self):
-        return f"{self.username}@[{self.org}] {self.datetime}"
+        return f"{self.name}@[{self.org}] {self.datetime}"
 
 class AitiaoLife(Base):
     __tablename__ = 'aitiaolife'
@@ -204,9 +204,18 @@ else:
     db = test_db
 
 
-async def init_tables(engine = test_engine):
+ROOT = 'root'
+
+async def init_tables(engine = test_engine, name = ROOT):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
+    async with db.create_session() as s:
+        async with s.begin():
+            if (await s.execute(select(Org).filter(Org.name == name))).one_or_none() is None:
+                s.add(Org(name=name))
+            if (await s.execute(select(User).filter(User.name == name))).one_or_none() is None:
+                s.add(User(name=name, passwd=name, org=name))
+
 
 async def drop_tables():
     async with test_engine.begin() as conn:

@@ -1,20 +1,14 @@
-from typing import List
 from utils import jsonify
 from fastapi import APIRouter, HTTPException
-from models import Org, ClientId, db
+from models import Org, db
 from sqlalchemy import select, func, update, delete
-
-API_PREFIX = '/api/v1'
+from api.version import API_PREFIX
 router = APIRouter(
-    prefix= API_PREFIX,
-    tags = ['main']
+    prefix= API_PREFIX + '/orgs',
+    tags = ['orgs']
 )
 
 @router.get('/')
-async def root():
-    return {"api/v1": "艾灸后端API/v1"}
-
-@router.get('/orgs')
 async def get_orgs(filter: str = '', case: bool = False):
     async with db.create_session_readonly() as s:
         if case:  # case sensitive
@@ -23,13 +17,13 @@ async def get_orgs(filter: str = '', case: bool = False):
             result = await s.execute(select(Org.name).filter(func.lower(Org.name).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
-@router.get('/orgs/{name}')
+@router.get('/{name}')
 async def get_org(name: str = ''):
     async with db.create_session_readonly() as s:
         result = await s.execute(select(Org.name, Org.datetime).filter(Org.name == name))
         return jsonify(result.one_or_none())
 
-@router.post('/orgs/{name}')
+@router.post('/{name}')
 async def create_org(name: str):
     if not name:
         raise HTTPException(400, f"No {Org.__name__} name")
@@ -39,7 +33,7 @@ async def create_org(name: str):
                 raise HTTPException(400, f"{Org.__name__} {name} already exists")
             s.add(Org(name=name))
 
-@router.put('/orgs/{name}/{newname}')
+@router.patch('/{name}/{newname}')
 async def rename_org(name: str, newname: str):
     if not name:
         raise HTTPException(400, f"No {Org.__name__} name")
@@ -51,7 +45,7 @@ async def rename_org(name: str, newname: str):
                 raise HTTPException(400, f"{Org.__name__} {name} does not exist")
             await s.execute(update(Org).where(Org.name==name).values(name=newname))
 
-@router.delete('/orgs/{name}')
+@router.delete('/{name}')
 async def delete_org(name: str):
     if not name:
         raise HTTPException(400, f"No {Org.__name__} name")

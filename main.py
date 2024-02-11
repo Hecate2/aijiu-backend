@@ -11,8 +11,9 @@ from fastapi import FastAPI
 import models
 
 app = FastAPI()
-from api import router
-app.include_router(router)
+import api
+app.include_router(api.router)
+app.include_router(api.org.router)
 
 
 @app.get("/")
