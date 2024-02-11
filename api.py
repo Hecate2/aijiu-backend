@@ -1,8 +1,8 @@
 from typing import List
 from utils import jsonify
 from fastapi import APIRouter, HTTPException
-from models import Org, ClientId, AijiuUser, db
-from sqlalchemy import select, func
+from models import Org, ClientId, db
+from sqlalchemy import select, func, update, delete
 
 API_PREFIX = '/api/v1'
 router = APIRouter(
@@ -30,9 +30,33 @@ async def get_org(name: str = ''):
         return jsonify(result.one_or_none())
 
 @router.post('/orgs/{name}')
-async def create_org(name: str = ''):
+async def create_org(name: str):
+    if not name:
+        raise HTTPException(400, f"No {Org.__name__} name")
     async with db.create_session() as s:
-        if (await s.execute(select(Org).filter(Org.name == name))).one_or_none():
-            raise HTTPException(400, {"success": False, "message": f"{Org.__name__} {name} already exists"})
-        s.add(Org(name=name))
-    return {"success": True}
+        async with s.begin():
+            if (await s.execute(select(Org).filter(Org.name == name))).one_or_none():
+                raise HTTPException(400, f"{Org.__name__} {name} already exists")
+            s.add(Org(name=name))
+
+@router.put('/orgs/{name}/{newname}')
+async def rename_org(name: str, newname: str):
+    if not name:
+        raise HTTPException(400, f"No {Org.__name__} name")
+    if not newname:
+        raise HTTPException(400, f"No {Org.__name__} new name")
+    async with db.create_session() as s:
+        async with s.begin():
+            if (await s.execute(select(Org).filter(Org.name == name))).one_or_none() is None:
+                raise HTTPException(400, f"{Org.__name__} {name} does not exist")
+            await s.execute(update(Org).where(Org.name==name).values(name=newname))
+
+@router.delete('/orgs/{name}')
+async def delete_org(name: str):
+    if not name:
+        raise HTTPException(400, f"No {Org.__name__} name")
+    async with db.create_session() as s:
+        async with s.begin():
+            if (await s.execute(select(Org).filter(Org.name == name))).one_or_none() is None:
+                raise HTTPException(400, f"{Org.__name__} {name} does not exist")
+            await s.execute(delete(Org).where(Org.name==name))

@@ -25,7 +25,7 @@ def datetime_utc_8():
 class Org(Base):
     __tablename__ = 'org'
     id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
+    name = Column(String, unique=True, index=True)
     datetime = Column(DateTime, default=datetime_utc_8)
     
     def __str__(self):
@@ -38,7 +38,7 @@ class ClientId(Base):
     '''
     __tablename__ = 'clientid'
     client_id = Column(String(64), primary_key=True)
-    org = Column(Integer, ForeignKey(f"{Org.__tablename__}.{Org.id.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=True)
+    org = Column(String, ForeignKey(f"{Org.__tablename__}.{Org.name.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=True)
     org2client = relationship(Org.__name__, backref='client2org')
     datetime = Column(DateTime, default=datetime_utc_8)
     
@@ -46,27 +46,37 @@ class ClientId(Base):
         return f"{self.client_id}@[{self.org}] {self.datetime}"
 
 
-class AijiuUser(Base):
-    __tablename__ = 'aijiuuser'
+# class AijiuUser(Base):
+#     __tablename__ = 'aijiuuser'
+#     username = Column(String(64), primary_key=True)
+#     passwd = Column(String(64), nullable=True)
+#     org = Column(String, ForeignKey(f"{Org.__tablename__}.{Org.name.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=True)
+#     org2user = relationship(Org.__name__, backref='user2org')
+#     datetime = Column(DateTime, default=datetime_utc_8)
+#
+#     def __str__(self):
+#         return f"{self.username}@[{self.org}] {self.datetime}"
+
+class User(Base):
+    __tablename__ = 'user'
     username = Column(String(64), primary_key=True)
-    passwd = Column(String(64), nullable=True)
-    org = Column(Integer, ForeignKey(f"{Org.__tablename__}.{Org.id.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=True)
+    passwd = Column(String(64), nullable=True)  # sha256 result
+    org = Column(String, ForeignKey(f"{Org.__tablename__}.{Org.name.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=True)
     org2user = relationship(Org.__name__, backref='user2org')
     datetime = Column(DateTime, default=datetime_utc_8)
-    
+
     def __str__(self):
         return f"{self.username}@[{self.org}] {self.datetime}"
 
-
 class AitiaoLife(Base):
     __tablename__ = 'aitiaolife'
-    id = Column(Integer, primary_key=True)
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'))
-    username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
+    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+                       primary_key=True)
+    timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
+    # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
     client2life = relationship(ClientId.__name__, backref='life2client')
-    user2life = relationship(AijiuUser.__name__, backref='life2user')
+    # user2life = relationship(AijiuUser.__name__, backref='life2user')
     aitiao_life = Column(Integer)  # in seconds
-    timestamp = Column(DateTime, default=datetime_utc_8)
     
     def __str__(self):
         m, s = divmod(self.aitiao_life, 60)
@@ -76,13 +86,13 @@ class AitiaoLife(Base):
 
 class AijiuStartEnd(Base):
     __tablename__ = 'aijiustartend'
-    id = Column(Integer, primary_key=True)
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'))
-    username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
+    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+                       primary_key=True)
+    timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
+    # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
     client2startend = relationship(ClientId.__name__, backref='startend2client')
-    user2startend = relationship(AijiuUser.__name__, backref='startend2user')
+    # user2startend = relationship(AijiuUser.__name__, backref='startend2user')
     start_end = Column(Boolean)
-    timestamp = Column(DateTime, default=datetime_utc_8)
     
     def __str__(self):
         return f"{self.username} {'starts' if self.start_end else 'ends'} at {self.timestamp}"
@@ -90,11 +100,13 @@ class AijiuStartEnd(Base):
 
 class AijiuTemperature(Base):
     __tablename__ = 'aijiutemperature'
-    id = Column(Integer, primary_key=True)
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'))
-    username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
+    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+                       primary_key=True)
+    timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
+    # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
+    client2temp = relationship(ClientId.__name__, backref='temp2client')
+    # user2temp = relationship(AijiuUser.__name__, backref='temp2user')
     temperature = Column(Integer)
-    timestamp = Column(DateTime, default=datetime_utc_8)
     
     def __str__(self):
         return f"{self.username} catalyst {self.temperature}℃ at {self.timestamp}"
@@ -102,11 +114,13 @@ class AijiuTemperature(Base):
 
 class CatalystTemperature(Base):
     __tablename__ = 'catalysttemperature'
-    id = Column(Integer, primary_key=True)
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'))
-    username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
+    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+                       primary_key=True)
+    timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
+    # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
+    client2catalyst = relationship(ClientId.__name__, backref='catalyst2client')
+    # user2catalyst = relationship(AijiuUser.__name__, backref='catalyst2user')
     temperature = Column(Integer)
-    timestamp = Column(DateTime, default=datetime_utc_8)
     
     def __str__(self):
         return f"{self.username} catalyst {self.temperature}℃ at {self.timestamp}"
@@ -115,10 +129,13 @@ class CatalystTemperature(Base):
 class FanRpm(Base):
     __tablename__ = 'fanrpm'
     id = Column(Integer, primary_key=True)
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'))
-    username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
+    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+                       primary_key=True)
+    timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
+    # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
+    client2fan = relationship(ClientId.__name__, backref='fan2client')
+    # user2fan = relationship(AijiuUser.__name__, backref='fan2user')
     rpm = Column(Integer)
-    timestamp = Column(DateTime, default=datetime_utc_8)
     
     def __str__(self):
         return f"{self.client_id} {self.username} fan {self.rpm}rpm at {self.timestamp}"

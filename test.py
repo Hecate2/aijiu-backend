@@ -1,5 +1,3 @@
-import datetime
-
 import pytest
 from asgi_lifespan import LifespanManager
 from httpx import AsyncClient
@@ -23,19 +21,25 @@ async def client():
 
 
 @pytest.mark.anyio
-async def test_create_user(client: AsyncClient):  # nosec
+async def test_org(client: AsyncClient):  # nosec
     await drop_tables()
     await init_tables()
+    # no initial org
     response = await client.get("orgs")
     assert response.status_code == 200 and response.json() == []
     response = await client.get("orgs/a")
     assert response.status_code == 200 and response.text == 'null' and response.json() == None
     
+    # create
     org_names = {'test_org', 'Hospital1', 'hospital2'}
     for org in org_names:
         response = await client.post(f"orgs/{org}")
-        assert response.status_code == 200, response.json() == {'success': True}
-    
+        assert response.status_code == 200
+    random_org = random.choice(list(org_names))
+    response = await client.post(f"orgs/{random_org}")
+    assert 400 <= response.status_code < 500 and random_org in response.json()['detail']
+
+    # get
     result = (await client.get("orgs")).json()
     assert len(result) == len(org_names)
     for org in result:
@@ -55,3 +59,15 @@ async def test_create_user(client: AsyncClient):  # nosec
     assert (result['name'] == random_org
         and abs(parser.parse(result['datetime']) - datetime.datetime.utcnow()).total_seconds()
             - datetime.timedelta(hours=8).total_seconds()) < 10
+    
+    # update
+    assert (await client.put("orgs/test_org")).status_code >= 400
+    await client.put("orgs/test_org/hospitalUpdated")
+    assert (await client.get("orgs/test_org")).json() is None
+    assert (await client.get("orgs/hospitalUpdated")).json()['name'] == 'hospitalUpdated'
+    assert (await client.put("orgs/test_org/hospitalUpdated")).status_code >= 400
+    
+    # delete
+    assert (await client.delete("orgs/test_org")).status_code >= 400
+    await client.delete("orgs/hospitalUpdated")
+    assert (await client.get("orgs/hospitalUpdated")).json() is None
