@@ -46,6 +46,13 @@ class ClientId(Base):
         return f"{self.client_id}@[{self.org}] {self.datetime}"
 
 
+class AitiaoPasswd(Base):
+    __tablename__ = 'aitiaopasswd'
+    passwd = Column(String, primary_key=True)
+    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+                       primary_key=True)
+
+
 # class AijiuUser(Base):
 #     __tablename__ = 'aijiuuser'
 #     username = Column(String(64), primary_key=True)
@@ -58,7 +65,7 @@ class ClientId(Base):
 #         return f"{self.username}@[{self.org}] {self.datetime}"
 
 class User(Base):
-    __tablename__ = 'user'
+    __tablename__ = 'backenduser'
     name = Column(String(64), primary_key=True)
     passwd = Column(String(64), nullable=True)  # sha256 result
     org = Column(String, ForeignKey(f"{Org.__tablename__}.{Org.name.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=True)
@@ -93,6 +100,20 @@ class AijiuStartEnd(Base):
     client2startend = relationship(ClientId.__name__, backref='startend2client')
     # user2startend = relationship(AijiuUser.__name__, backref='startend2user')
     start_end = Column(Boolean)
+    
+    def __str__(self):
+        return f"{self.username} {'starts' if self.start_end else 'ends'} at {self.timestamp}"
+
+
+class AijiuRemainingTime(Base):
+    __tablename__ = 'aijiuremainingtime'
+    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+                       primary_key=True)
+    timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
+    # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
+    client2remainingtime = relationship(ClientId.__name__, backref='remainingtime2client')
+    # user2startend = relationship(AijiuUser.__name__, backref='startend2user')
+    remaining_time = Column(Integer)
     
     def __str__(self):
         return f"{self.username} {'starts' if self.start_end else 'ends'} at {self.timestamp}"
@@ -209,6 +230,7 @@ ROOT = 'root'
 async def init_tables(engine = test_engine, name = ROOT):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
+    # create root org and root user
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(Org).filter(Org.name == name))).one_or_none() is None:

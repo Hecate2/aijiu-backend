@@ -11,10 +11,10 @@ from fastapi import FastAPI
 import models
 
 app = FastAPI()
-import api
+import api, mqtt
 app.include_router(api.router)
 app.include_router(api.org.router)
-
+mqtt.mqtt_data_subscribe.init_app(app)
 
 @app.get("/")
 async def app_root():
