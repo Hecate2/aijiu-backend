@@ -123,6 +123,7 @@ class AijiuTemperature(Base):
     __tablename__ = 'aijiutemperature'
     client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
+    device_id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
     client2temp = relationship(ClientId.__name__, backref='temp2client')
@@ -137,6 +138,7 @@ class CatalystTemperature(Base):
     __tablename__ = 'catalysttemperature'
     client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
+    device_id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
     client2catalyst = relationship(ClientId.__name__, backref='catalyst2client')
@@ -152,6 +154,7 @@ class FanRpm(Base):
     id = Column(Integer, primary_key=True)
     client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
+    device_id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
     client2fan = relationship(ClientId.__name__, backref='fan2client')
