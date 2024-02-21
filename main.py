@@ -14,7 +14,8 @@ app = FastAPI()
 import api, mqtt
 app.include_router(api.router)
 app.include_router(api.org.router)
-mqtt.mqtt_data_subscribe.init_app(app)
+if os.environ.get(PROD_MARKER, None):
+    mqtt.mqtt_data_subscribe.init_app(app)
 
 @app.get("/")
 async def app_root():

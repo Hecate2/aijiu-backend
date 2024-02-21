@@ -1,4 +1,5 @@
 from asyncio import current_task
+import asyncpg
 from contextlib import asynccontextmanager
 import datetime
 import os
@@ -186,6 +187,19 @@ def get_async_engine(url: str = TEST_DATABASE, echo=False):
 test_engine = get_async_engine(TEST_DATABASE)
 prod_engine = get_async_engine(PRODUCTION_DATABASE)
 
+async def connect_create_if_not_exists(user, passwd, database):
+    try:
+        conn = await asyncpg.connect(user=user, password=passwd, database=database)
+    except Exception:
+        # Database does not exist, create it.
+        sys_conn = await asyncpg.connect(user=user, password=passwd)
+        await sys_conn.execute(f'CREATE DATABASE "{database}" OWNER "{user}"')
+        await sys_conn.close()
+        # Connect to the newly created database.
+        conn = await asyncpg.connect(user=user, password=passwd, database=database)
+    return conn
+
+
 class DatabaseManager:
     def __init__(self, engine: AsyncEngine):
         self.engine = engine
@@ -230,18 +244,20 @@ else:
 
 ROOT = 'root'
 
-async def init_tables(engine = test_engine, name = ROOT):
+async def init_tables(engine = test_engine, org_name = ROOT):
+    await connect_create_if_not_exists(user=test_engine.url.username, passwd=test_engine.url.password, database=test_engine.url.database)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
     # create root org and root user
     async with db.create_session() as s:
         async with s.begin():
-            if (await s.execute(select(Org).filter(Org.name == name))).one_or_none() is None:
-                s.add(Org(name=name))
-            if (await s.execute(select(User).filter(User.name == name))).one_or_none() is None:
-                s.add(User(name=name, passwd=name, org=name))
+            if (await s.execute(select(Org).filter(Org.name == org_name))).one_or_none() is None:
+                s.add(Org(name=org_name))
+            if (await s.execute(select(User).filter(User.name == org_name))).one_or_none() is None:
+                s.add(User(name=org_name, passwd=org_name, org=org_name))
 
 
 async def drop_tables():
+    await connect_create_if_not_exists(user=test_engine.url.username, passwd=test_engine.url.password, database=test_engine.url.database)
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
