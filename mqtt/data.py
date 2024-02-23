@@ -1,10 +1,22 @@
+from contextlib import asynccontextmanager
 from typing import Any
 import json
 from gmqtt import Client as MQTTClient
+from fastapi import FastAPI
 from fastapi_mqtt import FastMQTT, MQTTConfig
 from models import AitiaoPasswd, AijiuStartEnd, AijiuRemainingTime, AitiaoLife, AijiuTemperature, CatalystTemperature, FanRpm, db
-mqtt_config = MQTTConfig()
-mqtt_data_subscribe = FastMQTT(config=mqtt_config)
+mqtt_config = MQTTConfig(
+    host="localhost",
+    port=1883,
+    keepalive=5,
+    # username="username",
+    # password="strong_password",
+)
+mqtt_data_subscribe = FastMQTT(config=mqtt_config, client_id='aijiu-test')
+
+@mqtt_data_subscribe.on_connect()
+def connect(client: MQTTClient, flags: int, rc: int, properties: Any):
+    print("Connected: ", client, flags, rc, properties)
 
 @mqtt_data_subscribe.subscribe("艾条密码/+")
 async def 艾条密码(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):

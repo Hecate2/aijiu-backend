@@ -6,16 +6,14 @@ else:
     if os.environ.get(PROD_MARKER, None):
         os.environ.pop(PROD_MARKER)
 
-import uvicorn
 from fastapi import FastAPI
 import models
 
 app = FastAPI()
-import api, mqtt
+import api
 app.include_router(api.router)
 app.include_router(api.org.router)
-if os.environ.get(PROD_MARKER, None):
-    mqtt.mqtt_data_subscribe.init_app(app)
+
 
 @app.get("/")
 async def app_root():
@@ -26,4 +24,19 @@ PORT = 8000
 if __name__ == "__main__":
     # asyncio.run(init_tables())
     models.db = models.prod_db
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
+    import asyncio
+    import mqtt
+    mqtt.mqtt_data_subscribe.init_app(app)
+    from uvicorn import Config, Server
+    loop = asyncio.get_event_loop()
+    config = Config(app=app, loop="asyncio")
+    server = Server(config)
+    loop.run_until_complete(server.serve())
+    # import uvicorn
+    # uvicorn.run(app, host="0.0.0.0", port=PORT)
+    # from multiprocessing import Process
+    # app_process = Process(name='艾灸后端', target=uvicorn.run, args=(app, ), kwargs={"host": "0.0.0.0", "port": PORT}, daemon=True)
+    # app_process.start()
+
+    
+
