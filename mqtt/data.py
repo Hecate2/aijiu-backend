@@ -23,7 +23,8 @@ async def 艾条密码(client: MQTTClient, topic: str, payload: bytes, qos: int,
     client_id = topic.split('/')[1]
     密码 = json.loads(payload.decode())['密码']
     # TODO: verify passwd; send 艾条有效秒数增加/设置艾条有效秒数
-    print(client_id, json.loads(payload.decode()))
+    print(topic, client_id, json.loads(payload.decode()))
+    mqtt_data_subscribe.publish(f'艾条有效秒数增加/{client_id}', payload={"增加秒数": 200}, qos=2)
 
 @mqtt_data_subscribe.subscribe("灸疗开始/+")
 async def 灸疗开始(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
