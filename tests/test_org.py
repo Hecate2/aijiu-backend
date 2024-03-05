@@ -1,29 +1,11 @@
 import pytest
-from asgi_lifespan import LifespanManager
 from httpx import AsyncClient
-from main import app
-from models import Org, init_tables, drop_tables, ROOT
+from database.connection import ROOT
 import random
-from dateutil import parser
-import datetime
-
-
-@pytest.fixture(scope="module")
-def anyio_backend():
-    return "asyncio"
-
-
-@pytest.fixture(scope="module")
-async def client():
-    async with LifespanManager(app):
-        async with AsyncClient(app=app, base_url="http://test/api/v1/", follow_redirects=True) as c:
-            yield c
-
+from test_utils import is_recent_time
 
 @pytest.mark.anyio
 async def test_org(client: AsyncClient):  # nosec
-    await drop_tables()
-    await init_tables()
     # root org only
     response = await client.get("orgs")
     assert response.status_code == 200 and response.json() == [{'name': ROOT}]
@@ -57,9 +39,8 @@ async def test_org(client: AsyncClient):  # nosec
     assert result is None
     random_org = random.choice(list(org_names))
     result = (await client.get(f"orgs/{random_org}")).json()
-    assert (result['name'] == random_org
-        and abs(parser.parse(result['datetime']) - datetime.datetime.utcnow()).total_seconds()
-            - datetime.timedelta(hours=8).total_seconds()) < 10
+    assert result['name'] == random_org
+    assert is_recent_time(result['datetime'])
     
     # update
     assert (await client.patch("orgs/test_org")).status_code >= 400
@@ -67,6 +48,7 @@ async def test_org(client: AsyncClient):  # nosec
     assert (await client.get("orgs/test_org")).json() is None
     assert (await client.get("orgs/hospitalUpdated")).json()['name'] == 'hospitalUpdated'
     assert (await client.patch("orgs/test_org/hospitalUpdated")).status_code >= 400
+    assert (await client.patch("orgs/Hospital1/hospitalUpdated")).status_code >= 400
     
     # delete
     assert (await client.delete("orgs/test_org")).status_code >= 400

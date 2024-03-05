@@ -1,4 +1,4 @@
-import api.org
+import api.org, api.user
 from api.version import API_PREFIX
 from fastapi import APIRouter
 router = APIRouter(

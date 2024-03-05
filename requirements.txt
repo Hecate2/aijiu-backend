@@ -1,5 +1,13 @@
-uvicorn==0.17.4
 httpx==0.21.0
 SQLAlchemy==2.0.4
 asgi_lifespan==2.1.0
+gmqtt==0.6.14
+pytest==7.4.4
+base58==1.0.3
+asyncpg==0.29.0
 fastapi==0.109.2
+gmssl==3.2.2
+paho_mqtt==2.0.0
+pydantic==2.6.1
+python_dateutil==2.8.2
+uvicorn==0.27.1

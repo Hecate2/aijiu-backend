@@ -1,6 +1,7 @@
 from utils import jsonify
 from fastapi import APIRouter, HTTPException
-from models import Org, db
+from database.models import Org
+from database.connection import db
 from sqlalchemy import select, func, update, delete
 from api.version import API_PREFIX
 router = APIRouter(
@@ -18,7 +19,7 @@ async def get_orgs(filter: str = '', case: bool = False):
         return jsonify(result.all())
 
 @router.get('/{name}')
-async def get_org(name: str = ''):
+async def get_org(name: str):
     async with db.create_session_readonly() as s:
         result = await s.execute(select(Org.name, Org.datetime).filter(Org.name == name))
         return jsonify(result.one_or_none())
@@ -43,6 +44,8 @@ async def rename_org(name: str, newname: str):
         async with s.begin():
             if (await s.execute(select(Org).filter(Org.name == name))).one_or_none() is None:
                 raise HTTPException(400, f"{Org.__name__} {name} does not exist")
+            if (await s.execute(select(Org).filter(Org.name == newname))).one_or_none():
+                raise HTTPException(400, f"{Org.__name__} {newname} exists")
             await s.execute(update(Org).where(Org.name==name).values(name=newname))
 
 @router.delete('/{name}')

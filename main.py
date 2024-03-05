@@ -7,12 +7,13 @@ else:
         os.environ.pop(PROD_MARKER)
 
 from fastapi import FastAPI
-import models
+from database import models
 
 app = FastAPI()
 import api
 app.include_router(api.router)
 app.include_router(api.org.router)
+app.include_router(api.user.router)
 
 
 @app.get("/")

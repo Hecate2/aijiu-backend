@@ -2,7 +2,6 @@
 # and sends them to the time scale database
 
 # from datetime import datetime, timedelta
-from models import time_series_tables, db
 from paho.mqtt import client as mqtt_client
 
 

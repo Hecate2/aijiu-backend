@@ -1,10 +1,9 @@
-from contextlib import asynccontextmanager
 from typing import Any
 import json
 from gmqtt import Client as MQTTClient
-from fastapi import FastAPI
 from fastapi_mqtt import FastMQTT, MQTTConfig
-from models import AitiaoPasswd, AijiuStartEnd, AijiuRemainingTime, AitiaoLife, AijiuTemperature, CatalystTemperature, FanRpm, db
+from database.models import AijiuStartEnd, AijiuRemainingTime, AijiuTemperature, CatalystTemperature, FanRpm, db
+from mqtt.auth import naive验证艾条密码, 艾条密码被同一组织使用过
 mqtt_config = MQTTConfig(
     host="localhost",
     port=1883,
@@ -16,15 +15,17 @@ mqtt_data_subscribe = FastMQTT(config=mqtt_config, client_id='aijiu-test')
 
 @mqtt_data_subscribe.on_connect()
 def connect(client: MQTTClient, flags: int, rc: int, properties: Any):
-    print("Connected: ", client, flags, rc, properties)
+    print("Connected: ", client.protocol_version, flags, rc, properties)
 
 @mqtt_data_subscribe.subscribe("艾条密码/+")
 async def 艾条密码(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
     client_id = topic.split('/')[1]
     密码 = json.loads(payload.decode())['密码']
-    # TODO: verify passwd; send 艾条有效秒数增加/设置艾条有效秒数
     print(topic, client_id, json.loads(payload.decode()))
-    mqtt_data_subscribe.publish(f'艾条有效秒数增加/{client_id}', payload={"增加秒数": 200}, qos=2)
+    if naive验证艾条密码(密码):
+        async for result in 艾条密码被同一组织使用过(client_id, 密码):
+            if result:
+                mqtt_data_subscribe.publish(f'艾条有效秒数增加/{client_id}', payload={"增加秒数": 200}, qos=2)
 
 @mqtt_data_subscribe.subscribe("灸疗开始/+")
 async def 灸疗开始(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
