@@ -1,7 +1,7 @@
 from typing import AsyncIterable
 from fastapi import APIRouter
 from api.version import API_PREFIX
-from database.models import AitiaoPasswd, ClientId, db
+from database.models import AitiaoPasswd, AijiuMachine, db
 from sqlalchemy import select
 
 mqtt_auth_router = APIRouter(
@@ -29,8 +29,8 @@ async def 艾条密码被同一组织使用过(client_id: str, passwd: str) -> A
     async with db.create_session(auto_commit=False) as s:
         async with s.begin():
             all_same_passwd_clients = select(AitiaoPasswd.client_id).filter(AitiaoPasswd.passwd == passwd)
-            all_same_passwd_orgs = await s.execute(select(ClientId.org).filter(ClientId.client_id.in_(all_same_passwd_clients)).distinct())
-            this_client_org = await s.execute(select(ClientId.org).filter(ClientId.client_id == client_id))
+            all_same_passwd_orgs = await s.execute(select(AijiuMachine.org).filter(AijiuMachine.id.in_(all_same_passwd_clients)).distinct())
+            this_client_org = await s.execute(select(AijiuMachine.org).filter(AijiuMachine.id == client_id))
             if this_client_org in all_same_passwd_orgs:
                 yield False
             s.add(AitiaoPasswd(passwd=passwd, client_id=client_id))

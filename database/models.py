@@ -21,24 +21,24 @@ class Org(Base):
         return f"{self.name} created at {self.datetime}"
 
 
-class ClientId(Base):
+class AijiuMachine(Base):
     '''
-    used as aijiu machine id
+    aijiu machines id
     '''
-    __tablename__ = 'clientid'
-    client_id = Column(String(64), primary_key=True)
-    org = Column(String, ForeignKey(f"{Org.__tablename__}.{Org.name.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=True)
+    __tablename__ = 'aijiumachine'
+    id = Column(String(64), primary_key=True)
+    org = Column(String, ForeignKey(f"{Org.__tablename__}.{Org.name.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=False)
     org2client = relationship(Org.__name__, backref='client2org')
     datetime = Column(DateTime, default=datetime_utc_8)
     
     def __str__(self):
-        return f"{self.client_id}@[{self.org}] {self.datetime}"
+        return f"{self.id}@[{self.org}] {self.datetime}"
 
 
 class AitiaoPasswd(Base):
     __tablename__ = 'aitiaopasswd'
     passwd = Column(String, primary_key=True)
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
 
 
@@ -83,11 +83,11 @@ class User(Base):
 
 class AitiaoLife(Base):
     __tablename__ = 'aitiaolife'
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
-    client2life = relationship(ClientId.__name__, backref='life2client')
+    client2life = relationship(AijiuMachine.__name__, backref='life2client')
     # user2life = relationship(AijiuUser.__name__, backref='life2user')
     aitiao_life = Column(Integer)  # in seconds
     
@@ -99,11 +99,11 @@ class AitiaoLife(Base):
 
 class AijiuStartEnd(Base):
     __tablename__ = 'aijiustartend'
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
-    client2startend = relationship(ClientId.__name__, backref='startend2client')
+    client2startend = relationship(AijiuMachine.__name__, backref='startend2client')
     # user2startend = relationship(AijiuUser.__name__, backref='startend2user')
     start_end = Column(Boolean)
     
@@ -113,11 +113,11 @@ class AijiuStartEnd(Base):
 
 class AijiuRemainingTime(Base):
     __tablename__ = 'aijiuremainingtime'
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
-    client2remainingtime = relationship(ClientId.__name__, backref='remainingtime2client')
+    client2remainingtime = relationship(AijiuMachine.__name__, backref='remainingtime2client')
     # user2startend = relationship(AijiuUser.__name__, backref='startend2user')
     remaining_time = Column(Integer)
     
@@ -127,12 +127,12 @@ class AijiuRemainingTime(Base):
 
 class AijiuTemperature(Base):
     __tablename__ = 'aijiutemperature'
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     device_id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
-    client2temp = relationship(ClientId.__name__, backref='temp2client')
+    client2temp = relationship(AijiuMachine.__name__, backref='temp2client')
     # user2temp = relationship(AijiuUser.__name__, backref='temp2user')
     temperature = Column(Integer)
     
@@ -142,12 +142,12 @@ class AijiuTemperature(Base):
 
 class CatalystTemperature(Base):
     __tablename__ = 'catalysttemperature'
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     device_id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
-    client2catalyst = relationship(ClientId.__name__, backref='catalyst2client')
+    client2catalyst = relationship(AijiuMachine.__name__, backref='catalyst2client')
     # user2catalyst = relationship(AijiuUser.__name__, backref='catalyst2user')
     temperature = Column(Integer)
     
@@ -158,12 +158,12 @@ class CatalystTemperature(Base):
 class FanRpm(Base):
     __tablename__ = 'fanrpm'
     id = Column(Integer, primary_key=True)
-    client_id = Column(ForeignKey(f"{ClientId.__tablename__}.{ClientId.client_id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     device_id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
-    client2fan = relationship(ClientId.__name__, backref='fan2client')
+    client2fan = relationship(AijiuMachine.__name__, backref='fan2client')
     # user2fan = relationship(AijiuUser.__name__, backref='fan2user')
     rpm = Column(Integer)
     

@@ -49,6 +49,7 @@ async def rename_user(org: str, name: str, newname: str):
             await s.execute(update(User).where(User.name==name).values(name=newname))
 
 # TODO: change user role
+# TODO: change passwd
 
 @router.delete('/{org}/{name}')
 async def delete_user(org: str, name: str):
