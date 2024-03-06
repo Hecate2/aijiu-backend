@@ -56,8 +56,6 @@ async def update_machine_org(id: str, neworg: str):
 
 @router.delete('/id/{id}/')
 async def delete_machine(id: str):
-    if not id:
-        raise HTTPException(400, f"No {AijiuMachine.__name__} name")
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(AijiuMachine).filter(AijiuMachine.id == id))).one_or_none() is None:

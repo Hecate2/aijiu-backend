@@ -1,7 +1,7 @@
 from asgi_lifespan import LifespanManager
 from httpx import AsyncClient
 from main import app
-from database.connection import init_tables, drop_tables
+from database.connection import init_tables, drop_tables, drop_database
 import pytest
 
 @pytest.fixture(scope="session")

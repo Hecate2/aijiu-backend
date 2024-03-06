@@ -26,8 +26,6 @@ async def get_user(org: str, name: str):
 
 @router.post('/{org}/{name}')
 async def create_user(org: str, name: str):
-    if not name:
-        raise HTTPException(400, f"No {User.__name__} name")
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(User).filter(User.name == name))).one_or_none():
@@ -36,10 +34,6 @@ async def create_user(org: str, name: str):
 
 @router.patch('/{org}/{name}/{newname}')
 async def rename_user(org: str, name: str, newname: str):
-    if not name:
-        raise HTTPException(400, f"No {User.__name__} name")
-    if not newname:
-        raise HTTPException(400, f"No {User.__name__} new name")
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(User).filter(User.org == org).filter(User.name == name))).one_or_none() is None:
@@ -48,13 +42,8 @@ async def rename_user(org: str, name: str, newname: str):
                 raise HTTPException(400, f"{User.__name__} {newname} exists")
             await s.execute(update(User).where(User.name==name).values(name=newname))
 
-# TODO: change user role
-# TODO: change passwd
-
 @router.delete('/{org}/{name}')
 async def delete_user(org: str, name: str):
-    if not name:
-        raise HTTPException(400, f"No {User.__name__} name")
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(User).filter(User.name == name).filter(User.org == org))).one_or_none() is None:

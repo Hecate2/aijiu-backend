@@ -3,6 +3,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
+from env import ROOT, ORG_ADMIN, ORG_USER
 
 def datetime_to_string(dt: datetime.datetime) -> str:
     return dt.strftime('%Y/%m/%d, %H:%M:%S')
@@ -27,7 +28,7 @@ class AijiuMachine(Base):
     '''
     __tablename__ = 'aijiumachine'
     id = Column(String(64), primary_key=True)
-    org = Column(String, ForeignKey(f"{Org.__tablename__}.{Org.name.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=False)
+    org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='NO ACTION'), nullable=False)
     org2client = relationship(Org.__name__, backref='client2org')
     datetime = Column(DateTime, default=datetime_utc_8)
     
@@ -38,8 +39,7 @@ class AijiuMachine(Base):
 class AitiaoPasswd(Base):
     __tablename__ = 'aitiaopasswd'
     passwd = Column(String, primary_key=True)
-    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
-                       primary_key=True)
+    client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'), primary_key=True, nullable=True)
 
 
 # class AijiuUser(Base):
@@ -56,26 +56,30 @@ class AitiaoPasswd(Base):
 class BackendPermissionByRole(Base):
     __tablename__ = 'backendpermissionbyrole'
     role = Column(String(16), primary_key=True)
-    super_read = Column(Boolean)
-    super_write = Column(Boolean)
-    write_my_org_user = Column(Boolean)
-    read_my_org_user = Column(Boolean)
-    write_my_org_aijiu_client = Column(Boolean)
-    read_my_org_aijiu_client = Column(Boolean)
+    super_read = Column(Boolean, default=False)  # read everything of every org
+    super_write = Column(Boolean, default=False)  # write everything of every org
+    write_my_org_user = Column(Boolean, default=False)
+    read_my_org_user = Column(Boolean, default=True)
+    write_my_org_aijiu_client = Column(Boolean, default=False)
+    read_my_org_aijiu_client = Column(Boolean, default=True)
+    # data reported by aijiu machines
+    read_my_org_aijiu_data = Column(Boolean, default=False)
+    write_my_org_aijiu_data = Column(Boolean, default=False)
     
-# TODO: init basic roles when app launched
-basic_roles = {
-    BackendPermissionByRole(role='...')
+BASIC_ROLES = {
+    BackendPermissionByRole(role=ROOT, super_read=True, super_write=True, write_my_org_user=True, read_my_org_user=True, write_my_org_aijiu_client=True, read_my_org_aijiu_client=True, read_my_org_aijiu_data=True, write_my_org_aijiu_data=True),
+    BackendPermissionByRole(role=ORG_ADMIN, super_read=False, super_write=False, write_my_org_user=True, read_my_org_user=True, write_my_org_aijiu_client=True, read_my_org_aijiu_client=True, read_my_org_aijiu_data=True, write_my_org_aijiu_data=True),
+    BackendPermissionByRole(role=ORG_USER, super_read=False, super_write=False, write_my_org_user=False, read_my_org_user=True, write_my_org_aijiu_client=False, read_my_org_aijiu_client=True, read_my_org_aijiu_data=False, write_my_org_aijiu_data=False),
 }
 
 class User(Base):
     __tablename__ = 'backenduser'
     name = Column(String(64), primary_key=True)
     passwd = Column(String(64), nullable=True)  # sha256 result
-    org = Column(String, ForeignKey(f"{Org.__tablename__}.{Org.name.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=True)
+    org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='NO ACTION'), nullable=False)
     org2user = relationship(Org.__name__, backref='user2org')
-    role = Column(String(16), ForeignKey(f"{BackendPermissionByRole.__tablename__}.{BackendPermissionByRole.role.name}",
-                                    onupdate='CASCADE', ondelete='RESTRICT'))
+    role = Column(String(16), ForeignKey(BackendPermissionByRole.role, onupdate='CASCADE', ondelete='RESTRICT'), nullable=False, default=ORG_USER)
+    role2user = relationship(BackendPermissionByRole.__name__, backref='user2role')
     datetime = Column(DateTime, default=datetime_utc_8)
 
     def __str__(self):
@@ -83,7 +87,7 @@ class User(Base):
 
 class AitiaoLife(Base):
     __tablename__ = 'aitiaolife'
-    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
@@ -99,7 +103,7 @@ class AitiaoLife(Base):
 
 class AijiuStartEnd(Base):
     __tablename__ = 'aijiustartend'
-    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
@@ -113,7 +117,7 @@ class AijiuStartEnd(Base):
 
 class AijiuRemainingTime(Base):
     __tablename__ = 'aijiuremainingtime'
-    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
@@ -127,7 +131,7 @@ class AijiuRemainingTime(Base):
 
 class AijiuTemperature(Base):
     __tablename__ = 'aijiutemperature'
-    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     device_id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
@@ -142,7 +146,7 @@ class AijiuTemperature(Base):
 
 class CatalystTemperature(Base):
     __tablename__ = 'catalysttemperature'
-    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     device_id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
@@ -158,7 +162,7 @@ class CatalystTemperature(Base):
 class FanRpm(Base):
     __tablename__ = 'fanrpm'
     id = Column(Integer, primary_key=True)
-    client_id = Column(ForeignKey(f"{AijiuMachine.__tablename__}.{AijiuMachine.id.name}", onupdate='CASCADE', ondelete='NO ACTION'),
+    client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     device_id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)

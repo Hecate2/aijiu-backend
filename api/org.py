@@ -26,8 +26,6 @@ async def get_org(name: str):
 
 @router.post('/{name}')
 async def create_org(name: str):
-    if not name:
-        raise HTTPException(400, f"No {Org.__name__} name")
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(Org).filter(Org.name == name))).one_or_none():
@@ -36,10 +34,6 @@ async def create_org(name: str):
 
 @router.patch('/{name}/{newname}')
 async def rename_org(name: str, newname: str):
-    if not name:
-        raise HTTPException(400, f"No {Org.__name__} name")
-    if not newname:
-        raise HTTPException(400, f"No {Org.__name__} new name")
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(Org).filter(Org.name == name))).one_or_none() is None:
@@ -50,8 +44,6 @@ async def rename_org(name: str, newname: str):
 
 @router.delete('/{name}')
 async def delete_org(name: str):
-    if not name:
-        raise HTTPException(400, f"No {Org.__name__} name")
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(Org).filter(Org.name == name))).one_or_none() is None:

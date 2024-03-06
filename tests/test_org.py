@@ -1,6 +1,6 @@
 import pytest
 from httpx import AsyncClient
-from database.connection import ROOT
+from env import ROOT
 import random
 from test_utils import is_recent_time
 

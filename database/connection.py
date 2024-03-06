@@ -1,11 +1,13 @@
 import os
-from typing import Callable
+import random
+import string
+from typing import Callable, Union
 import asyncpg
 from asyncio import current_task
 from contextlib import asynccontextmanager
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, async_scoped_session, create_async_engine
-from database.models import Org, User, Base
+from database.models import Org, User, BackendPermissionByRole, BASIC_ROLES, Base
 # set the args in system environment for real production
 PRODUCTION_USER = os.environ.get('AIJIU_DB_USER', 'postgres')
 PRODUCTION_PASSWORD = os.environ.get('AIJIU_DB_PASS', 'a')
@@ -31,7 +33,7 @@ def get_async_engine(url: str = TEST_DATABASE, echo=False):
 test_engine = get_async_engine(TEST_DATABASE)
 prod_engine = get_async_engine(PRODUCTION_DATABASE)
 
-async def connect_create_if_not_exists(user, passwd, database):
+async def create_database_if_not_exists(user, passwd, database):
     try:
         conn = await asyncpg.connect(user=user, password=passwd, database=database)
     except Exception:
@@ -42,6 +44,15 @@ async def connect_create_if_not_exists(user, passwd, database):
         # Connect to the newly created database.
         conn = await asyncpg.connect(user=user, password=passwd, database=database)
     return conn
+
+
+async def drop_database_inner(user, passwd, database):
+    try:
+        conn = await asyncpg.connect(user=user, password=passwd, database=database)
+        await conn.execute(f'DROP DATABASE "{database}"')
+        await conn.close()
+    except Exception:
+        pass
 
 
 class DatabaseManager:
@@ -80,30 +91,35 @@ class DatabaseManager:
 test_db = DatabaseManager(test_engine)
 prod_db = DatabaseManager(prod_engine)
 
-from env import PROD_MARKER
+from env import PROD_MARKER, ROOT
 
 if os.environ.get(PROD_MARKER, None) == 'TRUE':
     db = prod_db
 else:
     db = test_db
 
-ROOT = 'root'
 
-
-async def init_tables(engine=test_engine, org_name=ROOT):
-    await connect_create_if_not_exists(user=test_engine.url.username, passwd=test_engine.url.password, database=test_engine.url.database)
+async def init_tables(engine=test_engine, initial_org_name=ROOT):
+    await create_database_if_not_exists(user=engine.url.username, passwd=engine.url.password, database=engine.url.database)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
+    db = DatabaseManager(engine)
     # create root org and root user
     async with db.create_session() as s:
         async with s.begin():
-            if (await s.execute(select(Org).filter(Org.name == org_name))).one_or_none() is None:
-                s.add(Org(name=org_name))
-            if (await s.execute(select(User).filter(User.name == org_name))).one_or_none() is None:
-                s.add(User(name=org_name, passwd=org_name, org=org_name))
+            if (await s.execute(select(BackendPermissionByRole))).one_or_none() is None:
+                for role in BASIC_ROLES:
+                    s.add(role)
+            if (await s.execute(select(Org).filter(Org.name == initial_org_name))).one_or_none() is None:
+                s.add(Org(name=initial_org_name))
+            if (await s.execute(select(User).filter(User.name == initial_org_name))).one_or_none() is None:
+                s.add(User(name=initial_org_name, passwd=initial_org_name, org=initial_org_name, role=ROOT))
 
 
-async def drop_tables():
-    await connect_create_if_not_exists(user=test_engine.url.username, passwd=test_engine.url.password, database=test_engine.url.database)
-    async with test_engine.begin() as conn:
+async def drop_tables(engine=test_engine):
+    await create_database_if_not_exists(user=engine.url.username, passwd=engine.url.password, database=engine.url.database)
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
+async def drop_database(engine=test_engine):
+    await drop_database_inner(engine.url.username, engine.url.password, engine.url.database)

@@ -15,6 +15,7 @@ app.include_router(api.router)
 app.include_router(api.org.router)
 app.include_router(api.user.router)
 app.include_router(api.aijiu_machine.router)
+app.include_router(api.auth.router)
 
 
 @app.get("/")

@@ -1,4 +1,4 @@
-import api.org, api.user, api.aijiu_machine
+import api.org, api.user, api.aijiu_machine, api.auth
 from api.version import API_PREFIX
 from fastapi import APIRouter
 router = APIRouter(

@@ -1,10 +1,8 @@
 import pytest
 from httpx import AsyncClient
-from database.connection import ROOT
-from database.models import AijiuMachine
+from env import ROOT
 import random
 from test_utils import is_recent_time
-
 
 @pytest.mark.anyio
 async def test_aijiu_machine(client: AsyncClient):  # nosec
