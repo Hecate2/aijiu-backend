@@ -7,7 +7,7 @@ else:
         os.environ.pop(PROD_MARKER)
 
 from fastapi import FastAPI
-from database import models
+from database import connection
 
 app = FastAPI()
 import api
@@ -26,7 +26,7 @@ PORT = 8000
 
 if __name__ == "__main__":
     # asyncio.run(init_tables())
-    models.db = models.prod_db
+    connection.db = connection.prod_db
     import asyncio
     import mqtt
     mqtt.mqtt_data_subscribe.init_app(app)

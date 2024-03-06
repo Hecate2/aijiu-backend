@@ -1,7 +1,8 @@
 from typing import AsyncIterable
 from fastapi import APIRouter
 from api.version import API_PREFIX
-from database.models import AitiaoPasswd, AijiuMachine, db
+from database.models import AitiaoPasswd, AijiuMachine
+from database.connection import db
 from sqlalchemy import select
 
 mqtt_auth_router = APIRouter(

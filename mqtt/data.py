@@ -2,7 +2,8 @@ from typing import Any
 import json
 from gmqtt import Client as MQTTClient
 from fastapi_mqtt import FastMQTT, MQTTConfig
-from database.models import AijiuStartEnd, AijiuRemainingTime, AijiuTemperature, CatalystTemperature, FanRpm, db
+from database.models import AijiuStartEnd, AijiuRemainingTime, AijiuTemperature, CatalystTemperature, FanRpm
+from database.connection import db
 from mqtt.auth import naive验证艾条密码, 艾条密码被同一组织使用过
 mqtt_config = MQTTConfig(
     host="localhost",
