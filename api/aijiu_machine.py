@@ -14,24 +14,24 @@ router = APIRouter(
 async def get_machines(filter: str = '', case: bool = False):
     async with db.create_session_readonly() as s:
         if case:  # case sensitive
-            result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.datetime).filter(AijiuMachine.id.like(f'%{filter}%')))
+            result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.createTime).filter(AijiuMachine.id.like(f'%{filter}%')))
         else:
-            result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.datetime).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
+            result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.createTime).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
 @router.get('/orgs/{org}/')
 async def get_machines_in_org(org: str, filter: str = '', case: bool = False):
     async with db.create_session_readonly() as s:
         if case:  # case sensitive
-            result = await s.execute(select(AijiuMachine.id, AijiuMachine.datetime).filter(AijiuMachine.org == org).filter(AijiuMachine.id.like(f'%{filter}%')))
+            result = await s.execute(select(AijiuMachine.id, AijiuMachine.createTime).filter(AijiuMachine.org == org).filter(AijiuMachine.id.like(f'%{filter}%')))
         else:
-            result = await s.execute(select(AijiuMachine.id, AijiuMachine.datetime).filter(AijiuMachine.org == org).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
+            result = await s.execute(select(AijiuMachine.id, AijiuMachine.createTime).filter(AijiuMachine.org == org).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
 @router.get('/id/{id}/')
 async def get_machine_by_id(id: str):
     async with db.create_session_readonly() as s:
-        result = await s.execute(select(AijiuMachine.org, AijiuMachine.id, AijiuMachine.datetime).filter(AijiuMachine.id == id))
+        result = await s.execute(select(AijiuMachine.org, AijiuMachine.id, AijiuMachine.createTime).filter(AijiuMachine.id == id))
         return jsonify(result.one_or_none())
 
 @router.post('/id/{id}/{org}/')

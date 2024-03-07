@@ -13,15 +13,15 @@ router = APIRouter(
 async def get_orgs(filter: str = '', case: bool = False):
     async with db.create_session_readonly() as s:
         if case:  # case sensitive
-            result = await s.execute(select(Org.name).filter(Org.name.like(f'%{filter}%')))
+            result = await s.execute(select(Org.name, Org.createTime).filter(Org.name.like(f'%{filter}%')))
         else:
-            result = await s.execute(select(Org.name).filter(func.lower(Org.name).like(func.lower(f'%{filter}%'))))
+            result = await s.execute(select(Org.name, Org.createTime).filter(func.lower(Org.name).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
 @router.get('/{name}')
 async def get_org(name: str):
     async with db.create_session_readonly() as s:
-        result = await s.execute(select(Org.name, Org.datetime).filter(Org.name == name))
+        result = await s.execute(select(Org.name, Org.createTime).filter(Org.name == name))
         return jsonify(result.one_or_none())
 
 @router.post('/{name}')

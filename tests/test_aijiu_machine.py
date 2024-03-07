@@ -2,13 +2,14 @@ import pytest
 from httpx import AsyncClient
 from env import ROOT
 import random
-from test_utils import is_recent_time
+from test_utils import is_recent_time, root_org_only
 
 @pytest.mark.anyio
 async def test_aijiu_machine(client: AsyncClient):  # nosec
     # root org only
     response = await client.get("orgs")
-    assert response.status_code == 200 and response.json() == [{'name': ROOT}]
+    assert response.status_code == 200
+    root_org_only(response.json())
 
     test_org = "test_org"
     await client.post(f"orgs/{test_org}")
@@ -67,7 +68,7 @@ async def test_aijiu_machine(client: AsyncClient):  # nosec
         random_machine = random.choice(list(machine_ids_in_root.union(machine_ids_in_test_org)))
         result = (await client.get(f"machines/id/{random_machine}")).json()
         assert result['id'] == random_machine
-        assert is_recent_time(result['datetime'])
+        assert is_recent_time(result['createTime'])
     random_machine = random.choice(list(machine_ids_in_root))
     result = (await client.get(f"machines/orgs/{ROOT}")).json()
     assert random_machine in {i['id'] for i in result }

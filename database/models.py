@@ -16,10 +16,10 @@ class Org(Base):
     __tablename__ = 'org'
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, index=True)
-    datetime = Column(DateTime, default=datetime_utc_8)
+    createTime = Column(DateTime, default=datetime_utc_8)
     
     def __str__(self):
-        return f"{self.name} created at {self.datetime}"
+        return f"{self.name} created at {self.createTime}"
 
 
 class AijiuMachine(Base):
@@ -30,10 +30,10 @@ class AijiuMachine(Base):
     id = Column(String(64), primary_key=True)
     org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='NO ACTION'), nullable=False)
     org2client = relationship(Org.__name__, backref='client2org')
-    datetime = Column(DateTime, default=datetime_utc_8)
+    createTime = Column(DateTime, default=datetime_utc_8)
     
     def __str__(self):
-        return f"{self.id}@[{self.org}] {self.datetime}"
+        return f"{self.id}@[{self.org}] {self.createTime}"
 
 
 class AitiaoPasswd(Base):
@@ -48,10 +48,10 @@ class AitiaoPasswd(Base):
 #     passwd = Column(String(64), nullable=True)
 #     org = Column(String, ForeignKey(f"{Org.__tablename__}.{Org.name.name}", onupdate='CASCADE', ondelete='NO ACTION'), nullable=True)
 #     org2user = relationship(Org.__name__, backref='user2org')
-#     datetime = Column(DateTime, default=datetime_utc_8)
+#     createTime = Column(DateTime, default=datetime_utc_8)
 #
 #     def __str__(self):
-#         return f"{self.username}@[{self.org}] {self.datetime}"
+#         return f"{self.username}@[{self.org}] {self.createTime}"
 
 class BackendPermissionByRole(Base):
     __tablename__ = 'backendpermissionbyrole'
@@ -80,10 +80,10 @@ class User(Base):
     org2user = relationship(Org.__name__, backref='user2org')
     role = Column(String(16), ForeignKey(BackendPermissionByRole.role, onupdate='CASCADE', ondelete='RESTRICT'), nullable=False, default=ORG_USER)
     role2user = relationship(BackendPermissionByRole.__name__, backref='user2role')
-    datetime = Column(DateTime, default=datetime_utc_8)
+    createTime = Column(DateTime, default=datetime_utc_8)
 
     def __str__(self):
-        return f"{self.name}@[{self.org}] {self.datetime}"
+        return f"{self.name}@[{self.org}] {self.createTime}"
 
 class AitiaoLife(Base):
     __tablename__ = 'aitiaolife'

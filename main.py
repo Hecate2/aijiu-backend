@@ -17,6 +17,16 @@ app.include_router(api.user.router)
 app.include_router(api.aijiu_machine.router)
 app.include_router(api.auth.router)
 
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def app_root():

@@ -2,13 +2,14 @@ import pytest
 from httpx import AsyncClient
 from env import ROOT
 import random
-from test_utils import is_recent_time
+from test_utils import is_recent_time, root_org_only
 
 @pytest.mark.anyio
 async def test_org(client: AsyncClient):  # nosec
     # root org only
     response = await client.get("orgs")
-    assert response.status_code == 200 and response.json() == [{'name': ROOT}]
+    assert response.status_code == 200
+    root_org_only(response.json())
     response = await client.get("orgs/a")
     assert response.status_code == 200 and response.text == 'null' and response.json() == None
     
@@ -40,7 +41,7 @@ async def test_org(client: AsyncClient):  # nosec
     random_org = random.choice(list(org_names))
     result = (await client.get(f"orgs/{random_org}")).json()
     assert result['name'] == random_org
-    assert is_recent_time(result['datetime'])
+    assert is_recent_time(result['createTime'])
     
     # update
     assert (await client.patch("orgs/test_org")).status_code >= 400

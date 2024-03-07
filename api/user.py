@@ -13,15 +13,15 @@ router = APIRouter(
 async def get_users(org: str, filter: str = '', case: bool = False):
     async with db.create_session_readonly() as s:
         if case:  # case sensitive
-            result = await s.execute(select(User.org, User.name, User.role, User.datetime).filter(User.org == org).filter(User.name.like(f'%{filter}%')))
+            result = await s.execute(select(User.org, User.name, User.role, User.createTime).filter(User.org == org).filter(User.name.like(f'%{filter}%')))
         else:
-            result = await s.execute(select(User.org, User.name, User.role, User.datetime).filter(User.org == org).filter(func.lower(User.name).like(func.lower(f'%{filter}%'))))
+            result = await s.execute(select(User.org, User.name, User.role, User.createTime).filter(User.org == org).filter(func.lower(User.name).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
 @router.get('/{org}/{name}')
 async def get_user(org: str, name: str):
     async with db.create_session_readonly() as s:
-        result = await s.execute(select(User.org, User.name, User.role, User.datetime).filter(User.org == org).filter(User.name == name))
+        result = await s.execute(select(User.org, User.name, User.role, User.createTime).filter(User.org == org).filter(User.name == name))
         return jsonify(result.one_or_none())
 
 @router.post('/{org}/{name}')
