@@ -39,7 +39,9 @@ async def create_database_if_not_exists(user, passwd, database):
     except Exception:
         # Database does not exist, create it.
         sys_conn = await asyncpg.connect(user=user, password=passwd)
-        await sys_conn.execute(f'CREATE DATABASE "{database}" OWNER "{user}"')
+        sql = f'CREATE DATABASE "{database}" OWNER "{user}"'
+        # print(sql)
+        await sys_conn.execute(sql)
         await sys_conn.close()
         # Connect to the newly created database.
         conn = await asyncpg.connect(user=user, password=passwd, database=database)
@@ -102,17 +104,21 @@ else:
 async def init_tables(engine=test_engine, initial_org_name=ROOT):
     await create_database_if_not_exists(user=engine.url.username, passwd=engine.url.password, database=engine.url.database)
     async with engine.begin() as conn:
+        # print(f"Initializing tables with {engine.url}")
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
     db = DatabaseManager(engine)
     # create root org and root user
     async with db.create_session() as s:
         async with s.begin():
-            if (await s.execute(select(BackendPermissionByRole))).one_or_none() is None:
+            if not (await s.execute(select(BackendPermissionByRole))).first():
+                # print(f"Inserting basic roles")
                 for role in BASIC_ROLES:
                     s.add(role)
             if (await s.execute(select(Org).filter(Org.name == initial_org_name))).one_or_none() is None:
+                # print(f"Inserting root org {initial_org_name}")
                 s.add(Org(name=initial_org_name))
             if (await s.execute(select(User).filter(User.name == initial_org_name))).one_or_none() is None:
+                # print(f"Inserting root user {initial_org_name}")
                 s.add(User(name=initial_org_name, passwd=initial_org_name, org=initial_org_name, role=ROOT))
 
 

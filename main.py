@@ -34,6 +34,7 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     config = Config(app=app, loop="asyncio")
     server = Server(config)
+    loop.run_until_complete(connection.init_tables(engine=connection.prod_engine))
     loop.run_until_complete(server.serve())
     # import uvicorn
     # uvicorn.run(app, host="0.0.0.0", port=PORT)
