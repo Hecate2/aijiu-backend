@@ -17,6 +17,7 @@ class Org(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, index=True)
     createTime = Column(DateTime, default=datetime_utc_8)
+    isRoot = Column(Boolean, default=False)
     
     def __str__(self):
         return f"{self.name} created at {self.createTime}"

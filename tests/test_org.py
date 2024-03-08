@@ -61,12 +61,15 @@ async def test_org(client: AsyncClient):  # nosec
     assert int((await client.get(f"orgs/{org_name}/usercount")).text) == 3
 
     # delete
-    # Cannot delete an org with user
+    # cannot delete an org with user
     assert (response := await client.delete("orgs/hospitalUpdated")).status_code == 400
     assert 'Delete all of its users first' in response.json()['detail']
     for user in (await client.get(f"users/{org_name}")).json():
         await client.delete(f"users/{org_name}/{user['name']}")
+    # cannot delete root org
+    assert (response := await client.delete(f"orgs/{ROOT}")).status_code == 400
+    assert 'Cannot delete root org' in response.json()['detail']
     # can delete org with 0 user
-    assert (response := await client.delete("orgs/hospitalUpdated")).status_code == 200
+    assert (await client.delete("orgs/hospitalUpdated")).status_code == 200
     assert (await client.delete("orgs/test_org")).status_code >= 400
     assert (await client.get("orgs/hospitalUpdated")).json() is None
