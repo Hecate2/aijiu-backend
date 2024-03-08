@@ -76,7 +76,7 @@ class User(Base):
     __tablename__ = 'backenduser'
     name = Column(String(64), primary_key=True)
     passwd = Column(String(64), nullable=True)  # sha256 result
-    org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='NO ACTION'), nullable=False)
+    org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='RESTRICT'), nullable=False)
     org2user = relationship(Org.__name__, backref='user2org')
     role = Column(String(16), ForeignKey(BackendPermissionByRole.role, onupdate='CASCADE', ondelete='RESTRICT'), nullable=False, default=ORG_USER)
     role2user = relationship(BackendPermissionByRole.__name__, backref='user2role')
