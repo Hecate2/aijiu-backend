@@ -45,7 +45,7 @@ async def create_machine_for_org(id: str, org: Union[str, None]):
             s.add(AijiuMachine(id=id, org=org))
 
 @router.patch('/id/{id}/{neworg}/')
-async def update_machine_org(id: str, neworg: str):
+async def change_machine_org(id: str, neworg: str):
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(AijiuMachine).filter(AijiuMachine.id == id))).one_or_none() is None:

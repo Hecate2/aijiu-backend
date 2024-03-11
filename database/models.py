@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, SmallInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
@@ -17,7 +17,7 @@ class Org(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, index=True)
     createTime = Column(DateTime, default=datetime_utc_8)
-    isRoot = Column(Boolean, default=False)
+    authLevel = Column(SmallInteger, nullable=False)  # 0 for root
     
     def __str__(self):
         return f"{self.name} created at {self.createTime}"
@@ -75,7 +75,8 @@ BASIC_ROLES = {
 
 class User(Base):
     __tablename__ = 'backenduser'
-    name = Column(String(64), primary_key=True)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), unique=True, index=True)
     passwd = Column(String(64), nullable=True)  # sha256 result
     org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='RESTRICT'), nullable=False)
     org2user = relationship(Org.__name__, backref='user2org')

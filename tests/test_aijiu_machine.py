@@ -81,7 +81,6 @@ async def test_aijiu_machine(client: AsyncClient):  # nosec
     assert (await client.patch(f"machines/id/{random_machine_in_root}/{test_org}")).status_code == 200
     assert random_machine_in_root not in {i['id'] for i in (await client.get(f"machines/orgs/{ROOT}")).json()}
     assert random_machine_in_root in {i['id'] for i in (await client.get(f"machines/orgs/{test_org}")).json()}
-    assert (await client.delete(f"machines/id/{random_machine_in_root}"))
     machine_ids_in_root.remove(random_machine_in_root)
     machine_ids_in_test_org.add(random_machine_in_root)
     assert (await client.patch(f"machines/id/{random_machine_in_test_org}/{ROOT}")).status_code == 200

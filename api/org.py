@@ -13,15 +13,15 @@ router = APIRouter(
 async def get_orgs(filter: str = '', case: bool = False):
     async with db.create_session_readonly() as s:
         if case:  # case sensitive
-            result = await s.execute(select(Org.name, Org.createTime).filter(Org.name.like(f'%{filter}%')))
+            result = await s.execute(select(Org.name, Org.createTime, Org.authLevel).filter(Org.name.like(f'%{filter}%')))
         else:
-            result = await s.execute(select(Org.name, Org.createTime).filter(func.lower(Org.name).like(func.lower(f'%{filter}%'))))
+            result = await s.execute(select(Org.name, Org.createTime, Org.authLevel).filter(func.lower(Org.name).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
 @router.get('/{name}')
 async def get_org(name: str):
     async with db.create_session_readonly() as s:
-        result = await s.execute(select(Org.name, Org.createTime).filter(Org.name == name))
+        result = await s.execute(select(Org.name, Org.createTime, Org.authLevel).filter(Org.name == name))
         return jsonify(result.one_or_none())
 
 @router.get('/{org_name}/usercount')
@@ -35,7 +35,8 @@ async def create_org(name: str):
         async with s.begin():
             if (await s.execute(select(Org).filter(Org.name == name))).one_or_none():
                 raise HTTPException(400, f"{Org.__name__} {name} already exists")
-            s.add(Org(name=name))
+            s.add(Org(name=name, authLevel=1))
+            # TODO: decide authLevel
 
 @router.patch('/{name}/{newname}')
 async def rename_org(name: str, newname: str):
@@ -51,9 +52,9 @@ async def rename_org(name: str, newname: str):
 async def delete_org(name: str):
     async with db.create_session() as s:
         async with s.begin():
-            if (org := (await s.execute(select(Org.isRoot).filter(Org.name == name))).one_or_none()) is None:
+            if (org := (await s.execute(select(Org.authLevel).filter(Org.name == name))).one_or_none()) is None:
                 raise HTTPException(400, f"{Org.__name__} {name} does not exist")
-            if org.isRoot:
+            if org.authLevel == 0:
                 raise HTTPException(400, f"Cannot delete root org `{name}`")
             if user_count := await get_org_user_count(name) > 0:
                 raise HTTPException(400, f"Cannot delete {Org.__name__} {name} because it has {user_count} users. Delete all of its users first.")
