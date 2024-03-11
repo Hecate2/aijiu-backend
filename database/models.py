@@ -23,6 +23,12 @@ class Org(Base):
         return f"{self.name} created at {self.createTime}"
 
 
+class ParentOrg(Base):
+    __tablename__ = 'parentorg'
+    org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+    parentOrg = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='RESTRICT'), primary_key=True)
+
+
 class AijiuMachine(Base):
     '''
     aijiu machines id

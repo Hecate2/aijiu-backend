@@ -4,6 +4,7 @@ from database.models import Org, User
 from database.connection import db
 from sqlalchemy import select, func, update, delete
 from api.version import API_PREFIX
+from env import ROOT
 router = APIRouter(
     prefix= API_PREFIX + '/orgs',
     tags = ['orgs']
@@ -36,7 +37,7 @@ async def create_org(name: str):
             if (await s.execute(select(Org).filter(Org.name == name))).one_or_none():
                 raise HTTPException(400, f"{Org.__name__} {name} already exists")
             s.add(Org(name=name, authLevel=1))
-            # TODO: decide authLevel
+            # TODO: decide authLevel and parent org
 
 @router.patch('/{name}/{newname}')
 async def rename_org(name: str, newname: str):
