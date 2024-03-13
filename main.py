@@ -1,10 +1,9 @@
 import os
-from env import PROD_MARKER
+from env import set_prod_env, ensure_non_prod_env
 if __name__ == '__main__':
-    os.environ[PROD_MARKER] = 'TRUE'
+    set_prod_env()
 else:
-    if os.environ.get(PROD_MARKER, None):
-        os.environ.pop(PROD_MARKER)
+    ensure_non_prod_env()
 
 from fastapi import FastAPI
 from database import connection

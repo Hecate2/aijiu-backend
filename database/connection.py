@@ -1,11 +1,13 @@
 import os
-from typing import Callable, Union
+from typing import Callable
 import asyncpg
 from asyncio import current_task
 from contextlib import asynccontextmanager
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, async_scoped_session, create_async_engine
 from database.models import Org, ParentOrg, User, BackendPermissionByRole, BASIC_ROLES, Base
+from env import is_prod_env, ROOT
+
 # set the args in system environment for real production
 PRODUCTION_USER = os.environ.get('AIJIU_DB_USER', 'postgres')
 PRODUCTION_PASSWORD = os.environ.get('AIJIU_DB_PASS', 'a')
@@ -91,9 +93,7 @@ class DatabaseManager:
 test_db = DatabaseManager(test_engine)
 prod_db = DatabaseManager(prod_engine)
 
-from env import PROD_MARKER, ROOT
-
-if os.environ.get(PROD_MARKER, None) == 'TRUE':
+if is_prod_env():
     db = prod_db
 else:
     db = test_db
@@ -115,7 +115,7 @@ async def init_tables(engine=test_engine, initial_org_name=ROOT):
             if (await s.execute(select(Org).filter(Org.name == initial_org_name))).one_or_none() is None:
                 # print(f"Inserting root org {initial_org_name}")
                 s.add(Org(name=initial_org_name, authLevel=0))
-                if os.environ.get(PROD_MARKER, None) == 'TRUE':
+                if is_prod_env():
                     for i in range(3):
                         test_org_name = f'测试组织{i}，可以无视或删除'
                         s.add(Org(name=test_org_name, authLevel=1))

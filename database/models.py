@@ -1,16 +1,9 @@
-import datetime
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, SmallInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 from env import ROOT, ORG_ADMIN, ORG_USER
-
-def datetime_to_string(dt: datetime.datetime) -> str:
-    return dt.strftime('%Y/%m/%d, %H:%M:%S')
-
-def datetime_utc_8():
-    return datetime.datetime.utcnow() + datetime.timedelta(hours=8)
-
+from utils import datetime_utc_8
 
 class Org(Base):
     __tablename__ = 'org'
@@ -25,7 +18,7 @@ class Org(Base):
 
 class ParentOrg(Base):
     __tablename__ = 'parentorg'
-    org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+    org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='CASCADE'), primary_key=True, unique=True)
     parentOrg = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='RESTRICT'), primary_key=True)
 
 
@@ -83,7 +76,7 @@ class User(Base):
     __tablename__ = 'backenduser'
     id = Column(Integer, primary_key=True)
     name = Column(String(64), unique=True, index=True)
-    passwd = Column(String(64), nullable=True)  # sha256 result
+    passwd = Column(String(64), nullable=True)  # sha512 result
     org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='RESTRICT'), nullable=False)
     org2user = relationship(Org.__name__, backref='user2org')
     role = Column(String(16), ForeignKey(BackendPermissionByRole.role, onupdate='CASCADE', ondelete='RESTRICT'), nullable=False, default=ORG_USER)
