@@ -1,5 +1,14 @@
 import os
+from fastapi_mqtt import MQTTConfig
 
+MQTT_CONFIG = MQTTConfig(
+    host="localhost",
+    port=1883,
+    keepalive=5,
+    # username="username",
+    # password="strong_password",
+)
+MQTT_CLIENT_ID = 'aijiu-backend'
 PROD_MARKER = 'AIJIU_PROD'
 ROOT = 'root'
 ORG_ADMIN = 'org_admin'

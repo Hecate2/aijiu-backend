@@ -1,18 +1,12 @@
 from typing import Any
+from env import MQTT_CLIENT_ID, MQTT_CONFIG
 import json
 from gmqtt import Client as MQTTClient
-from fastapi_mqtt import FastMQTT, MQTTConfig
+from fastapi_mqtt import FastMQTT
 from database.models import AijiuStartEnd, AijiuRemainingTime, AijiuTemperature, CatalystTemperature, FanRpm
 from database.connection import db
 from mqtt.auth import naive验证艾条密码, 艾条密码被同一组织使用过
-mqtt_config = MQTTConfig(
-    host="localhost",
-    port=1883,
-    keepalive=5,
-    # username="username",
-    # password="strong_password",
-)
-mqtt_data_subscribe = FastMQTT(config=mqtt_config, client_id='aijiu-test')
+mqtt_data_subscribe = FastMQTT(config=MQTT_CONFIG, client_id=MQTT_CLIENT_ID)
 
 @mqtt_data_subscribe.on_connect()
 def connect(client: MQTTClient, flags: int, rc: int, properties: Any):
