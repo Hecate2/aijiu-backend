@@ -44,12 +44,12 @@ async def test_org(client: AsyncClient):  # nosec
     assert is_recent_time(result['createTime'])
     
     # update
-    assert (await client.patch("orgs/test_org")).status_code >= 400
-    await client.patch("orgs/test_org/hospitalUpdated")
+    assert (await client.post("orgs/test_org")).status_code >= 400
+    await client.post("orgs/test_org/hospitalUpdated")
     assert (await client.get("orgs/test_org")).json() is None
     assert (await client.get("orgs/hospitalUpdated")).json()['name'] == 'hospitalUpdated'
-    assert (await client.patch("orgs/test_org/hospitalUpdated")).status_code >= 400
-    assert (await client.patch("orgs/Hospital1/hospitalUpdated")).status_code >= 400
+    assert (await client.post("orgs/test_org/hospitalUpdated")).status_code >= 400
+    assert (await client.post("orgs/Hospital1/hospitalUpdated")).status_code >= 400
     
     # count user
     org_name = 'hospitalUpdated'
@@ -71,5 +71,5 @@ async def test_org(client: AsyncClient):  # nosec
     assert 'Cannot delete root org' in response.json()['detail']
     # can delete org with 0 user
     assert (await client.delete("orgs/hospitalUpdated")).status_code == 200
-    assert (await client.delete("orgs/test_org")).status_code >= 400
+    assert (await client.delete("orgs/test_org")).status_code == 200
     assert (await client.get("orgs/hospitalUpdated")).json() is None

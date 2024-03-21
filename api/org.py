@@ -1,6 +1,6 @@
 from utils import jsonify
 from fastapi import APIRouter, HTTPException
-from database.models import Org, User
+from database.models import Org, ParentOrg, User
 from database.connection import db
 from sqlalchemy import select, func, update, delete
 from api.version import API_PREFIX
@@ -25,6 +25,16 @@ async def get_org(name: str):
         result = await s.execute(select(Org.name, Org.createTime, Org.authLevel).filter(Org.name == name))
         return jsonify(result.one_or_none())
 
+@router.get('/children/{name}')
+async def get_children_orgs(name: str):
+    async with db.create_session_readonly() as s:
+        return jsonify((await s.execute(select(ParentOrg.org).filter(ParentOrg.parentOrg == name))).all())
+
+@router.get('/parent/{name}')
+async def get_parent_org(name: str):
+    async with db.create_session_readonly() as s:
+        return jsonify((await s.execute(select(ParentOrg.parentOrg).filter(ParentOrg.org == name))).one_or_none())
+
 @router.get('/{org_name}/usercount')
 async def get_org_user_count(org_name: str):
     async with db.create_session_readonly() as s:
@@ -39,7 +49,7 @@ async def create_org(name: str):
             s.add(Org(name=name, authLevel=1))
             # TODO: decide authLevel and parent org
 
-@router.patch('/{name}/{newname}')
+@router.post('/{name}/{newname}')
 async def rename_org(name: str, newname: str):
     async with db.create_session() as s:
         async with s.begin():
@@ -54,7 +64,7 @@ async def delete_org(name: str):
     async with db.create_session() as s:
         async with s.begin():
             if (org := (await s.execute(select(Org.authLevel).filter(Org.name == name))).one_or_none()) is None:
-                raise HTTPException(400, f"{Org.__name__} {name} does not exist")
+                return
             if org.authLevel == 0:
                 raise HTTPException(400, f"Cannot delete root org `{name}`")
             if user_count := await get_org_user_count(name) > 0:
