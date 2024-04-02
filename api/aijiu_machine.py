@@ -5,6 +5,7 @@ from database.models import AijiuMachine, Org
 from database.connection import db
 from sqlalchemy import select, func, update, delete
 from api.version import API_PREFIX
+from env import EMQX_HTTP_CLIENT
 router = APIRouter(
     prefix= API_PREFIX + '/machines',
     tags = ['machines']
@@ -27,6 +28,10 @@ async def get_machines_in_org(org: str, filter: str = '', case: bool = False):
         else:
             result = await s.execute(select(AijiuMachine.id, AijiuMachine.createTime).filter(AijiuMachine.org == org).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
+
+@router.get('/online')
+async def get_machines_online():
+    return (await EMQX_HTTP_CLIENT.get('/clients')).json()
 
 @router.get('/id/{id}/')
 async def get_machine_by_id(id: str):
