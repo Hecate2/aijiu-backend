@@ -1,4 +1,5 @@
 from typing import Union, Dict
+import asyncio
 from utils import jsonify
 from fastapi import APIRouter, HTTPException
 from database.models import AijiuMachine, Org
@@ -13,17 +14,18 @@ router = APIRouter(
 
 @router.get('/')
 async def get_machines(filter: str = '', case: bool = False):
+    connected = asyncio.create_task(get_machines_online())
     async with db.create_session_readonly() as s:
         if case:  # case sensitive
             result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.createTime).filter(AijiuMachine.id.like(f'%{filter}%')))
         else:
             result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.createTime).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
         result = jsonify(result.all())
-        connected = await get_machines_online()
-        for c in result:
-            if c['id'] in connected:
-                c['connectedAt'] = connected[c['id']]
-        return result
+    connected = await connected
+    for c in result:
+        if c['id'] in connected:
+            c['connectedAt'] = connected[c['id']]
+    return result
 
 @router.get('/orgs/{org}/')
 async def get_machines_in_org(org: str, filter: str = '', case: bool = False):
