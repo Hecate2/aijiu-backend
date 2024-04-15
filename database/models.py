@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, SmallInteger
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, SmallInteger, DECIMAL
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
@@ -176,4 +176,14 @@ class FanRpm(Base):
         return f"{self.client_id} {self.username} fan {self.rpm}rpm at {self.timestamp}"
 
 
-time_series_tables = {AitiaoLife, AijiuStartEnd, AijiuTemperature, CatalystTemperature, FanRpm}
+class GPSPosition(Base):
+    __tablename__ = 'gpsposition'
+    id = Column(Integer, primary_key=True)
+    client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'),
+                       primary_key=True)
+    timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
+    client2gps = relationship(AijiuMachine.__name__, backref='gps2client')
+    degreeE = Column(DECIMAL, nullable=False)
+    degreeN = Column(DECIMAL, nullable=False)
+
+time_series_tables = {AitiaoLife, AijiuStartEnd, AijiuTemperature, CatalystTemperature, FanRpm, GPSPosition}

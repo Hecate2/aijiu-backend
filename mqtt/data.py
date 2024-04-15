@@ -3,7 +3,7 @@ from env import MQTT_CLIENT_ID, MQTT_CONFIG
 import json
 from gmqtt import Client as MQTTClient
 from fastapi_mqtt import FastMQTT
-from database.models import AijiuStartEnd, AijiuRemainingTime, AijiuTemperature, CatalystTemperature, FanRpm
+from database.models import AijiuStartEnd, AijiuRemainingTime, AijiuTemperature, CatalystTemperature, FanRpm, GPSPosition
 from database.connection import db
 from mqtt.auth import naive验证艾条密码, 艾条密码被同一组织使用过
 mqtt_data_subscribe = FastMQTT(config=MQTT_CONFIG, client_id=MQTT_CLIENT_ID)
@@ -72,3 +72,10 @@ async def 散热风机转速(client: MQTTClient, topic: str, payload: bytes, qos
     async with db.create_session() as s:
         s.add(FanRpm(client_id=client_id, device_id=int(device_id), timestamp=timestamp, rpm=转速))
 
+@mqtt_data_subscribe.subscribe("GPS定位/+")
+async def GPS定位(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
+    _, client_id = topic.split('/')
+    payload = json.loads(payload.decode())
+    timestamp = payload['ts']
+    async with db.create_session() as s:
+        s.add(GPSPosition(client_id=client_id, timestamp=timestamp, degreeE=payload['E'], degreeN=payload['N']))
