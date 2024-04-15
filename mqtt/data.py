@@ -3,7 +3,7 @@ from env import MQTT_CLIENT_ID, MQTT_CONFIG
 import json
 from gmqtt import Client as MQTTClient
 from fastapi_mqtt import FastMQTT
-from database.models import AijiuStartEnd, AijiuRemainingTime, AijiuTemperature, CatalystTemperature, FanRpm, GPSPosition
+from database.models import AitiaoLife, AijiuStartEnd, AijiuRemainingTime, AijiuTemperature, CatalystTemperature, FanRpm, GPSPosition
 from database.connection import db
 from mqtt.auth import naive验证艾条密码, 艾条密码被同一组织使用过
 mqtt_data_subscribe = FastMQTT(config=MQTT_CONFIG, client_id=MQTT_CLIENT_ID)
@@ -21,6 +21,14 @@ async def 艾条密码(client: MQTTClient, topic: str, payload: bytes, qos: int,
         async for result in 艾条密码被同一组织使用过(client_id, 密码):
             if result:
                 mqtt_data_subscribe.publish(f'艾条有效秒数增加/{client_id}', payload={"增加秒数": 200}, qos=2)
+
+@mqtt_data_subscribe.subscribe("艾条有效秒数/+")
+async def 艾条有效秒数(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
+    client_id = topic.split('/')[1]
+    有效秒数 = json.loads(payload.decode())['有效秒数']
+    print(topic, client_id, json.loads(payload.decode()))
+    async with db.create_session() as s:
+        s.add(AitiaoLife(client_id=client_id, aitiao_life=有效秒数))
 
 @mqtt_data_subscribe.subscribe("灸疗开始/+")
 async def 灸疗开始(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
