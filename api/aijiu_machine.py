@@ -1,11 +1,11 @@
-from typing import Union
+from typing import Union, Dict
 from utils import jsonify
 from fastapi import APIRouter, HTTPException
 from database.models import AijiuMachine, Org
 from database.connection import db
 from sqlalchemy import select, func, update, delete
 from api.version import API_PREFIX
-from env import EMQX_HTTP_CLIENT
+from env import EMQX_HTTP_CLIENT, is_prod_env
 router = APIRouter(
     prefix= API_PREFIX + '/machines',
     tags = ['machines']
@@ -18,7 +18,12 @@ async def get_machines(filter: str = '', case: bool = False):
             result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.createTime).filter(AijiuMachine.id.like(f'%{filter}%')))
         else:
             result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.createTime).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
-        return jsonify(result.all())
+        result = jsonify(result.all())
+        connected = await get_machines_online()
+        for c in result:
+            if c['id'] in connected:
+                c['connectedAt'] = connected[c['id']]
+        return result
 
 @router.get('/orgs/{org}/')
 async def get_machines_in_org(org: str, filter: str = '', case: bool = False):
@@ -30,8 +35,22 @@ async def get_machines_in_org(org: str, filter: str = '', case: bool = False):
         return jsonify(result.all())
 
 @router.get('/online')
-async def get_machines_online():
-    return (await EMQX_HTTP_CLIENT.get('/clients')).json()
+async def get_machines_online() -> Dict[str, str]:
+    '''
+    
+    :return: clientid: connect_time '2024-04-15T13:01:50.655+08:00'
+    '''
+    page = 1
+    all_data = dict()
+    if not is_prod_env():
+        return all_data
+    while True:
+        result = (await EMQX_HTTP_CLIENT.get(f'/clients?limit=1000&conn_state=connected&page={page}')).json()
+        for c in result['data']:
+            all_data[c['clientid']] = c['connected_at']
+        if not result['meta']['hasnext']:
+            return all_data
+        page += 1
 
 @router.get('/id/{id}/')
 async def get_machine_by_id(id: str):
