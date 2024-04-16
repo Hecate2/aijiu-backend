@@ -28,9 +28,19 @@ async def get_user(org: str, name: str):
 async def create_user(org: str, name: str):
     async with db.create_session() as s:
         async with s.begin():
-            if (await s.execute(select(User).filter(User.name == name))).one_or_none():
+            if (await s.execute(select(User).filter(User.org == org).filter(User.name == name))).one_or_none():
                 raise HTTPException(400, f"{User.__name__} {name} already exists")
             s.add(User(name=name, org=org))
+
+@router.patch('/{org}/{username}/role/{new_role}')
+async def change_user_role(org: str, username: str, new_role: str):
+    async with db.create_session() as s:
+        async with s.begin():
+            user = (await s.execute(select(User).filter(User.org == org).filter(User.name == username))).one_or_none()
+            if not user:
+                raise HTTPException(400, f"{User.__name__} {username} does not exist")
+            await s.execute(update(User).filter(User.org == org).where(User.name == username).values(role=new_role))
+            
 
 @router.patch('/{org}/{name}/{newname}')
 async def rename_user(org: str, name: str, newname: str):
@@ -40,12 +50,12 @@ async def rename_user(org: str, name: str, newname: str):
                 raise HTTPException(400, f"{User.__name__} {name} does not exist")
             if (await s.execute(select(User).filter(User.org == org).filter(User.name == newname))).one_or_none():
                 raise HTTPException(400, f"{User.__name__} {newname} exists")
-            await s.execute(update(User).where(User.name==name).values(name=newname))
+            await s.execute(update(User).filter(User.org == org).where(User.name==name).values(name=newname))
 
 @router.delete('/{org}/{name}')
 async def delete_user(org: str, name: str):
     async with db.create_session() as s:
         async with s.begin():
-            if (await s.execute(select(User).filter(User.name == name).filter(User.org == org))).one_or_none() is None:
+            if (await s.execute(select(User).filter(User.org == org).filter(User.name == name))).one_or_none() is None:
                 raise HTTPException(400, f"{User.__name__} {name} does not exist")
-            await s.execute(delete(User).where(User.name==name).filter(User.org == org))
+            await s.execute(delete(User).filter(User.org == org).where(User.name==name).filter(User.org == org))

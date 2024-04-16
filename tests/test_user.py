@@ -1,7 +1,8 @@
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.exc import IntegrityError
 from env import ROOT
-from database.models import User
+from database.models import User, ROOT, ORG_ADMIN, ORG_USER
 import random
 from test_utils import is_recent_time, root_org_only
 
@@ -60,6 +61,15 @@ async def test_user(client: AsyncClient):  # nosec
     assert (await client.get(f"users/{ROOT}/userUpdated")).json()['name'] == 'userUpdated'
     assert (await client.patch(f"users/{ROOT}/test_user/userUpdated")).status_code >= 400
     assert (await client.patch(f"users/{ROOT}/User1/userUpdated")).status_code >= 400
+    # update role
+    assert (await client.patch(f"users/{ROOT}/userUpdated/role/{ORG_ADMIN}")).status_code == 200
+    assert (await client.get(f"users/{ROOT}/userUpdated")).json()['role'] == ORG_ADMIN
+    try:
+        response = await client.patch(f"users/{ROOT}/userUpdated/role/不存在的角色")
+    except IntegrityError as e:
+        pass
+    else:
+        raise ValueError('Should fail to set non-existent role')
     
     # delete
     assert (await client.delete(f"users/{ROOT}/test_org")).status_code >= 400
