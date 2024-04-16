@@ -1,11 +1,12 @@
 from typing import Union, Dict
 import asyncio
 from utils import jsonify
-from fastapi import APIRouter, HTTPException
-from database.models import AijiuMachine, Org
+from fastapi import APIRouter, HTTPException, Depends
+from database.models import AijiuMachine, Org, BackendPermissionByRole
 from database.connection import db
 from sqlalchemy import select, func, update, delete
 from api.version import API_PREFIX
+from api.auth import allow, JWTBearer
 from env import EMQX_HTTP_CLIENT, is_prod_env
 router = APIRouter(
     prefix= API_PREFIX + '/machines',
@@ -13,7 +14,8 @@ router = APIRouter(
 )
 
 @router.get('/')
-async def get_machines(filter: str = '', case: bool = False):
+@allow({}, super_permissions={BackendPermissionByRole.super_read})
+async def get_machines(filter: str = '', case: bool = False, auth = Depends(JWTBearer())):
     connected = asyncio.create_task(get_machines_online())
     async with db.create_session_readonly() as s:
         if case:  # case sensitive
@@ -28,7 +30,8 @@ async def get_machines(filter: str = '', case: bool = False):
     return result
 
 @router.get('/orgs/{org}/')
-async def get_machines_in_org(org: str, filter: str = '', case: bool = False):
+@allow({BackendPermissionByRole.read_my_org_aijiu_client}, super_permissions={BackendPermissionByRole.super_read})
+async def get_machines_in_org(org: str, filter: str = '', case: bool = False, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         if case:  # case sensitive
             result = await s.execute(select(AijiuMachine.id, AijiuMachine.createTime).filter(AijiuMachine.org == org).filter(AijiuMachine.id.like(f'%{filter}%')))
@@ -37,7 +40,8 @@ async def get_machines_in_org(org: str, filter: str = '', case: bool = False):
         return jsonify(result.all())
 
 @router.get('/online')
-async def get_machines_online() -> Dict[str, str]:
+# @allow({}, super_permissions={BackendPermissionByRole.super_read})
+async def get_machines_online(auth = Depends(JWTBearer())) -> Dict[str, str]:
     '''
     
     :return: clientid: connect_time '2024-04-15T13:01:50.655+08:00'
@@ -55,13 +59,14 @@ async def get_machines_online() -> Dict[str, str]:
         page += 1
 
 @router.get('/id/{id}/')
-async def get_machine_by_id(id: str):
+async def get_machine_by_id(id: str, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         result = await s.execute(select(AijiuMachine.org, AijiuMachine.id, AijiuMachine.createTime).filter(AijiuMachine.id == id))
         return jsonify(result.one_or_none())
 
 @router.post('/id/{id}/{org}/')
-async def create_machine_for_org(id: str, org: Union[str, None]):
+@allow({BackendPermissionByRole.write_my_org_aijiu_client})
+async def create_machine_for_org(id: str, org: Union[str, None], auth = Depends(JWTBearer())):
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(AijiuMachine).filter(AijiuMachine.id == id))).one_or_none():
@@ -71,7 +76,7 @@ async def create_machine_for_org(id: str, org: Union[str, None]):
             s.add(AijiuMachine(id=id, org=org))
 
 @router.patch('/id/{id}/{neworg}/')
-async def change_machine_org(id: str, neworg: str):
+async def change_machine_org(id: str, neworg: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(AijiuMachine).filter(AijiuMachine.id == id))).one_or_none() is None:
@@ -81,7 +86,8 @@ async def change_machine_org(id: str, neworg: str):
             await s.execute(update(AijiuMachine).where(AijiuMachine.id==id).values(org=neworg))
 
 @router.delete('/id/{id}/')
-async def delete_machine(id: str):
+@allow({BackendPermissionByRole.write_my_org_aijiu_client})
+async def delete_machine(id: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:
         async with s.begin():
             if (await s.execute(select(AijiuMachine).filter(AijiuMachine.id == id))).one_or_none() is None:

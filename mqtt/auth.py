@@ -13,7 +13,7 @@ mqtt_auth_router = APIRouter(
 @mqtt_auth_router.post('/')
 async def mqtt_auth(clientid: str = '', peerhost: str = ''):
     # TODO
-    return {"result": "allow"}
+    return {"result": "allow_read"}
 
 def naive验证艾条密码(passwd: str) -> bool:
     """

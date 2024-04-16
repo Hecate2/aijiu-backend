@@ -1,14 +1,18 @@
 import os
+from functools import wraps
 from hashlib import sha512
-from typing import Union
+from typing import Dict, Union, Iterable
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Body, HTTPException
 from api.version import API_PREFIX
-from database.models import User, BackendPermissionByRole
+from database.models import User, ParentOrg, BackendPermissionByRole
 from sqlalchemy import select, func, update, delete
+from sqlalchemy.orm import InstrumentedAttribute
 from database.connection import db
 from utils import jsonify, datetime_utc_8
+from fastapi import Request, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from env import is_prod_env
 
 SECRET_KEY = "艾灸后端foobar阿巴阿巴"
@@ -79,7 +83,6 @@ async def login(org: str = Body(), user: str = Body(), passwd = Body()):
         })}
     raise HTTPException(400, f"Incorrect passwd for user {user} in {org}")
 
-# TODO: change user role
 # TODO: change passwd
 
 @router.get('/permission/{org}/{username}')
@@ -89,3 +92,54 @@ async def get_permission(org: str, username: str):
             role = (await s.execute(select(User.role).filter(User.org == org).filter(User.name == username))).one()[0]
             permission = (await s.execute(select(*BackendPermissionByRole.__table__.columns).filter_by(role=role))).one()
             return jsonify(permission)
+
+class JWTBearer(HTTPBearer):
+    def __init__(self, auto_error: bool = True):
+        super(JWTBearer, self).__init__(auto_error=auto_error)
+
+    async def __call__(self, request: Request):
+        credentials: HTTPAuthorizationCredentials = await super(JWTBearer, self).__call__(request)
+        if credentials:
+            if not credentials.scheme == "Bearer":
+                raise HTTPException(status_code=403, detail="Invalid authentication scheme.")
+            if not (payload := self.verify_jwt(credentials.credentials)):
+                raise HTTPException(status_code=403, detail="Invalid token or expired token.")
+            return payload
+        else:
+            raise HTTPException(status_code=403, detail="Invalid authorization code.")
+
+    @staticmethod
+    def verify_jwt(jwtoken: str) -> dict:
+        try:
+            payload = decode_jwt(jwtoken)
+        except:
+            payload = {}
+        return payload
+
+
+def allow(permissions: Iterable[InstrumentedAttribute], super_permissions: Iterable[InstrumentedAttribute] = None, allow_self=True):
+    """
+    :param permissions: [BackendPermissionByRole.read_my_org_user, ...]
+    :param super_permissions:
+    :param allow_self:
+    :return:
+    """
+    if super_permissions is None:
+        super_permissions = {BackendPermissionByRole.super_write}
+    def decorator_auth(func):
+        @wraps(func)
+        async def wrapper_auth(*args, **kwargs):
+            auth: Dict[str, str] = kwargs['auth']
+            same_org: bool = 'org' in kwargs and kwargs['org'] == auth['org']
+            if allow_self and 'name' in kwargs and kwargs['name'] == auth['name'] and same_org:
+                # self permission
+                return func(*args, **kwargs)
+            async with db.create_session_readonly() as s:
+                role = select(User.role).filter(User.org == auth['org']).filter(User.name == auth['name'])
+                result = (await s.execute(select(*permissions, *super_permissions).filter(BackendPermissionByRole.role == role))).one()
+            if (any(result[-len(super_permissions):])  # super permisssion
+                    or (same_org and any(result[:-len(super_permissions)]))):  # org permission
+                return await func(*args, **kwargs)
+            raise HTTPException(401, f"Unauthorized")
+        return wrapper_auth
+    return decorator_auth
