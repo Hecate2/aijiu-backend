@@ -135,7 +135,7 @@ def allow(permissions: Iterable[InstrumentedAttribute], super_permissions: Itera
                 # self permission
                 return func(*args, **kwargs)
             async with db.create_session_readonly() as s:
-                role = select(User.role).filter(User.org == auth['org']).filter(User.name == auth['name'])
+                role = select(User.role).filter(User.org == auth['org']).filter(User.name == auth['name']).scalar_subquery()
                 result = (await s.execute(select(*permissions, *super_permissions).filter(BackendPermissionByRole.role == role))).one()
             if (any(result[-len(super_permissions):])  # super permisssion
                     or (same_org and any(result[:-len(super_permissions)]))):  # org permission
