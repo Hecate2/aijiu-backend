@@ -71,17 +71,16 @@ router = APIRouter(
 @router.post('/login/')
 async def login(org: str = Body(), user: str = Body(), passwd = Body()):
     async with db.create_session_readonly() as s:
-        try:
-            user = (await s.execute(select(User.org, User.name, User.role, User.passwd).filter(User.org == org).filter(User.name == user))).one_or_none()
-        except Exception:
-            raise HTTPException(400, f"{User.__name__} {user} in {org} does not exist")
-    if user.passwd == None or user.passwd == passwd or user.passwd == sha512((passwd + SECRET_KEY).encode('utf-8')).digest():
+        userObj = (await s.execute(select(User.org, User.name, User.role, User.passwd).filter(User.org == org).filter(User.name == user))).one_or_none()
+    if not userObj:
+        raise HTTPException(403, f"No user {user} in org {org}")
+    if userObj.passwd == None or userObj.passwd == passwd or userObj.passwd == sha512((passwd + SECRET_KEY).encode('utf-8')).digest():
         return {"token": encode_jwt({
-            User.org.name: user.org,
-            User.name.name: user.name,
-            User.role.name: user.role,
+            User.org.name: userObj.org,
+            User.name.name: userObj.name,
+            User.role.name: userObj.role,
         })}
-    raise HTTPException(400, f"Incorrect passwd for user {user} in {org}")
+    raise HTTPException(403, f"Incorrect passwd for user {user} in org {org}")
 
 # TODO: change passwd
 
@@ -94,19 +93,19 @@ async def get_permission(org: str, username: str):
             return jsonify(permission)
 
 class JWTBearer(HTTPBearer):
-    def __init__(self, auto_error: bool = True):
+    def __init__(self, auto_error: bool = False):
         super(JWTBearer, self).__init__(auto_error=auto_error)
 
     async def __call__(self, request: Request):
         credentials: HTTPAuthorizationCredentials = await super(JWTBearer, self).__call__(request)
         if credentials:
             if not credentials.scheme == "Bearer":
-                raise HTTPException(status_code=403, detail="Invalid authentication scheme.")
+                raise HTTPException(status_code=403, detail="Invalid authentication scheme. Try login again.")
             if not (payload := self.verify_jwt(credentials.credentials)):
-                raise HTTPException(status_code=403, detail="Invalid token or expired token.")
+                raise HTTPException(status_code=403, detail="Invalid token or expired token. Try login again.")
             return payload
         else:
-            raise HTTPException(status_code=403, detail="Invalid authorization code.")
+            raise HTTPException(status_code=403, detail="Invalid authorization code. Try login again.")
 
     @staticmethod
     def verify_jwt(jwtoken: str) -> dict:
@@ -130,8 +129,8 @@ def allow(permissions: Iterable[InstrumentedAttribute], super_permissions: Itera
         @wraps(func)
         async def wrapper_auth(*args, **kwargs):
             auth: Dict[str, str] = kwargs['auth']
-            same_org: bool = 'org' in kwargs and kwargs['org'] == auth['org']
-            if allow_self and 'name' in kwargs and kwargs['name'] == auth['name'] and same_org:
+            same_org: bool = User.org.name in kwargs and kwargs[User.org.name] == auth[User.org.name]
+            if allow_self and User.name.name in kwargs and kwargs[User.name.name] == auth[User.name.name] and same_org:
                 # self permission
                 return func(*args, **kwargs)
             async with db.create_session_readonly() as s:
@@ -140,6 +139,6 @@ def allow(permissions: Iterable[InstrumentedAttribute], super_permissions: Itera
             if (any(result[-len(super_permissions):])  # super permisssion
                     or (same_org and any(result[:-len(super_permissions)]))):  # org permission
                 return await func(*args, **kwargs)
-            raise HTTPException(401, f"Unauthorized")
+            raise HTTPException(401, f"Unauthorized. Try to login again.")
         return wrapper_auth
     return decorator_auth
