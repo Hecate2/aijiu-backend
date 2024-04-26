@@ -19,7 +19,7 @@ EMQX_USERNAME = "955b89e5df8bcf4c"
 EMQX_PASSWD = "LlujOHHu1NONPjb5Ta5r9BJCX8dxL8cad9CaRwKYIz4QI"
 EMQX_API_PORT = 18083
 EMQX_HTTP_CLIENT = httpx.AsyncClient(
-    base_url=f'http://{MQTT_CONFIG.host}:{18083}/api/v5',
+    base_url=f'http://{MQTT_CONFIG.host}:{EMQX_API_PORT}/api/v5',
     auth=httpx.BasicAuth(username=EMQX_USERNAME, password=EMQX_PASSWD)
     # headers={'Authorization':'Basic OTU1Yjg5ZTVkZjhiY2Y0YzpMbHVqT0hIdTFOT05QamI1VGE1cjlCSkNYOGR4TDhjYWQ5Q2FSd0tZSXo0UUk='}
 )
