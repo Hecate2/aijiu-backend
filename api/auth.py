@@ -46,23 +46,6 @@ def encode_jwt(original_data: dict, expires_delta: Union[timedelta, None] = None
 def decode_jwt(encoded_jwt: str) -> dict: return jwt.decode(encoded_jwt, SECRET_KEY, algorithms=ALGORITHM)
 # except JWTError?
 
-class PermissionChecker:
-    # TODO: baked queries
-    @staticmethod
-    async def can_write_org(org: str, user: str) -> bool:
-        return True
-    @staticmethod
-    async def can_read_org(org: str, user: str) -> bool:
-        return True
-    @staticmethod
-    async def can_write_all_orgs(user: str) -> bool:
-        return True
-    @staticmethod
-    async def can_read_all_orgs(user: str) -> bool:
-        return True
-    def __call__(self, user: User):
-        return True
-    
 router = APIRouter(
     prefix= API_PREFIX + '/auth',
     tags = ['auth']

@@ -30,35 +30,35 @@ async def 艾条有效秒数(client: MQTTClient, topic: str, payload: bytes, qos
     async with db.create_session() as s:
         s.add(AitiaoLife(client_id=client_id, aitiao_life=有效秒数))
 
-@mqtt_data_subscribe.subscribe("灸疗开始/+")
+@mqtt_data_subscribe.subscribe("灸疗开始/+/+")
 async def 灸疗开始(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
-    client_id = topic.split('/')[1]
+    client_id, device_id = topic.split('/')[1:3]
     payload = json.loads(payload.decode())
     定时, timestamp = payload['定时'], payload['ts']
     async with db.create_session() as s:
         s.add(AijiuStartEnd(client_id=client_id, timestamp=timestamp, start_end=True))
-        s.add(AijiuRemainingTime(client_id=client_id, timestamp=timestamp, remaining_time=定时))
+        s.add(AijiuRemainingTime(client_id=client_id, device_id=int(device_id), timestamp=timestamp, remaining_time=定时))
 
-@mqtt_data_subscribe.subscribe("灸疗结束/+")
+@mqtt_data_subscribe.subscribe("灸疗结束/+/+")
 async def 灸疗结束(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
-    client_id = topic.split('/')[1]
+    client_id, device_id = topic.split('/')[1:3]
     payload = json.loads(payload.decode())
     timestamp = payload['ts']
     async with db.create_session() as s:
         s.add(AijiuStartEnd(client_id=client_id, timestamp=timestamp, start_end=False))
-        s.add(AijiuRemainingTime(client_id=client_id, timestamp=timestamp, remaining_time=0))
+        s.add(AijiuRemainingTime(client_id=client_id, device_id=int(device_id), timestamp=timestamp, remaining_time=0))
 
-@mqtt_data_subscribe.subscribe("灸疗剩余时间/+")
+@mqtt_data_subscribe.subscribe("灸疗剩余时间/+/+")
 async def 灸疗剩余时间(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
-    client_id = topic.split('/')[1]
+    client_id, device_id = topic.split('/')[1:3]
     payload = json.loads(payload.decode())
     剩余时间, timestamp = payload['剩余时间'], payload['ts']
     async with db.create_session() as s:
-        s.add(AijiuRemainingTime(client_id=client_id, timestamp=timestamp, remaining_time=剩余时间))
+        s.add(AijiuRemainingTime(client_id=client_id, device_id=int(device_id), timestamp=timestamp, remaining_time=剩余时间))
 
 @mqtt_data_subscribe.subscribe("灸疗温度/+/+")
 async def 灸疗温度(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
-    _, client_id, device_id = topic.split('/')
+    client_id, device_id = topic.split('/')[1:3]
     payload = json.loads(payload.decode())
     温度, timestamp = payload['温度'], payload['ts']
     async with db.create_session() as s:

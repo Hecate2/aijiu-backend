@@ -106,6 +106,7 @@ class AijiuStartEnd(Base):
     __tablename__ = 'aijiustartend'
     client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
+    device_id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
     client2startend = relationship(AijiuMachine.__name__, backref='startend2client')
@@ -120,6 +121,7 @@ class AijiuRemainingTime(Base):
     __tablename__ = 'aijiuremainingtime'
     client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
+    device_id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
     # username = Column(ForeignKey(f"{AijiuUser.__tablename__}.{AijiuUser.username.name}", onupdate='CASCADE', ondelete='NO ACTION'))
     client2remainingtime = relationship(AijiuMachine.__name__, backref='remainingtime2client')
