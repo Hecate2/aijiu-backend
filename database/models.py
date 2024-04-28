@@ -164,7 +164,6 @@ class CatalystTemperature(Base):
 
 class FanRpm(Base):
     __tablename__ = 'fanrpm'
-    id = Column(Integer, primary_key=True)
     client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     device_id = Column(Integer, primary_key=True)
@@ -180,7 +179,6 @@ class FanRpm(Base):
 
 class GPSPosition(Base):
     __tablename__ = 'gpsposition'
-    id = Column(Integer, primary_key=True)
     client_id = Column(ForeignKey(AijiuMachine.id, onupdate='CASCADE', ondelete='NO ACTION'),
                        primary_key=True)
     timestamp = Column(DateTime, default=datetime_utc_8, primary_key=True)
