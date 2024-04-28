@@ -23,13 +23,13 @@ async def 艾条密码(client: MQTTClient, topic: str, payload: bytes, qos: int,
             if result:
                 mqtt_data_subscribe.publish(f'艾条有效秒数增加/{client_id}', payload={"增加秒数": 200}, qos=2)
 
-@mqtt_data_subscribe.subscribe("艾条有效秒数")
-async def 艾条有效秒数(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
+@mqtt_data_subscribe.subscribe("艾条有效时间")
+async def 艾条有效时间(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
     payload = json.loads(payload.decode())
-    有效秒数, client_id = payload['有效秒数'], payload['client_id']
+    有效时间, client_id, timestamp = int(payload['有效时间']), str(payload['client_id']), datetime.datetime.fromisoformat(payload['ts'])
     print(topic, payload)
     async with db.create_session() as s:
-        s.add(AitiaoLife(client_id=client_id, aitiao_life=有效秒数))
+        s.add(AitiaoLife(client_id=client_id, aitiao_life=有效时间, timestamp=timestamp))
 
 @mqtt_data_subscribe.subscribe("灸疗启停/+")
 async def 灸疗启停(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
