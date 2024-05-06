@@ -2,7 +2,7 @@ from typing import Union, Dict
 import asyncio
 from utils import jsonify
 from fastapi import APIRouter, HTTPException, Depends
-from database.models import AijiuMachine, Org, BackendPermissionByRole
+from database.models import AijiuMachine, Org, GPSPosition, BackendPermissionByRole
 from database.connection import db
 from sqlalchemy import select, func, update, delete
 from api.version import API_PREFIX
@@ -22,12 +22,30 @@ async def get_machines(filter: str = '', case: bool = False, auth = Depends(JWTB
             result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.createTime).filter(AijiuMachine.id.like(f'%{filter}%')))
         else:
             result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.createTime).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
-        result = jsonify(result.all())
+    result = jsonify(result.all())
     connected = await connected
     for c in result:
         if c['id'] in connected:
             c['connectedAt'] = connected[c['id']]
     return result
+
+@router.get('/gps')
+# @allow({}, super_permissions={BackendPermissionByRole.super_read})
+# async def get_machines_by_gps(auth = Depends(JWTBearer())):
+async def get_machines_by_gps():
+    """
+    :return: distinct GPSPosition records of different client_ids, picking only the latest record
+    """
+    async with db.create_session_readonly() as s:
+        subquery = select(
+            GPSPosition,
+            func.rank().over(
+                order_by=GPSPosition.timestamp.desc(),
+                partition_by=GPSPosition.client_id
+            ).label('rank'),
+        ).subquery()
+        result = await s.execute(select(*([*subquery.columns][:-1])).filter(subquery.c.rank == 1))
+    return jsonify(result.all())
 
 @router.get('/orgs/{org}/')
 @allow({BackendPermissionByRole.read_my_org_aijiu_client}, super_permissions={BackendPermissionByRole.super_read})
