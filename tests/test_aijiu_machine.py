@@ -1,8 +1,16 @@
+import datetime
+
 import pytest
 from httpx import AsyncClient
 from env import ROOT
 import random
+from database.models import GPSPosition
+from database.connection import db
 from test_utils import is_recent_time, root_org_only
+from utils import datetime_utc_8
+import dateutil.parser
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import delete
 
 @pytest.mark.anyio
 async def test_aijiu_machine(client: AsyncClient):  # nosec
@@ -89,8 +97,31 @@ async def test_aijiu_machine(client: AsyncClient):  # nosec
     machine_ids_in_test_org.remove(random_machine_in_test_org)
     machine_ids_in_root.add(random_machine_in_test_org)
 
+    # gps
+    all_machine_ids = [m['id'] for m in (await client.get(f"machines")).json()]
+    random.shuffle(all_machine_ids)
+    now = datetime_utc_8()
+    async with db.create_session() as s:
+        for m in all_machine_ids:
+            for i in range(1, 5):
+                s.add(GPSPosition(client_id=m, timestamp=now + datetime.timedelta(seconds=i), degreeE=-i/10 + hash(m) % -120, degreeN=i/10))
+    latest_gps = (await client.get(f"machines/gps")).json()
+    for g in latest_gps:
+        machine_id, timestamp, degreeE, degreeN = g['client_id'], dateutil.parser.isoparse(g['timestamp']), g['degreeE'], g['degreeN']
+        assert timestamp == now + datetime.timedelta(seconds=4)
+        assert degreeE == -4/10 + hash(machine_id) % -120
+        assert degreeN == 4/10
+
     # delete
     random_machine = random.choice(list(machine_ids_in_test_org))
     assert (await client.delete(f"machines/id/不存在的machine")).status_code >= 400
+    try:
+        await client.delete(f"machines/id/{random_machine}")
+    except IntegrityError:
+        pass
+    else:
+        raise IndexError("Deleted a machine with its GPS record stored")
+    async with db.create_session() as s:
+        await s.execute(delete(GPSPosition))
     assert (await client.delete(f"machines/id/{random_machine}")).status_code == 200
     assert random_machine not in {i['id'] for i in (await client.get(f"machines/orgs/{test_org}")).json()}

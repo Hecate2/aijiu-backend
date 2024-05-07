@@ -30,9 +30,9 @@ async def get_machines(filter: str = '', case: bool = False, auth = Depends(JWTB
     return result
 
 @router.get('/gps')
-# @allow({}, super_permissions={BackendPermissionByRole.super_read})
-# async def get_machines_by_gps(auth = Depends(JWTBearer())):
-async def get_machines_by_gps():
+@allow({}, super_permissions={BackendPermissionByRole.super_read})
+async def get_machines_by_gps(auth = Depends(JWTBearer())):
+# async def get_machines_by_gps():
     """
     :return: distinct GPSPosition records of different client_ids, picking only the latest record
     """
