@@ -107,10 +107,14 @@ async def test_aijiu_machine(client: AsyncClient):  # nosec
                 s.add(GPSPosition(client_id=m, timestamp=now + datetime.timedelta(seconds=i), degreeE=-i/10 + hash(m) % -120, degreeN=i/10))
     latest_gps = (await client.get(f"machines/gps")).json()
     for g in latest_gps:
-        machine_id, timestamp, degreeE, degreeN = g['client_id'], dateutil.parser.isoparse(g['timestamp']), g['degreeE'], g['degreeN']
+        machine_id, timestamp, degreeE, degreeN, org = g['client_id'], dateutil.parser.isoparse(g['timestamp']), g['degreeE'], g['degreeN'], g['org']
         assert timestamp == now + datetime.timedelta(seconds=4)
         assert degreeE == -4/10 + hash(machine_id) % -120
         assert degreeN == 4/10
+        if machine_id in machine_ids_in_root:
+            assert org == ROOT
+        if machine_id in machine_ids_in_test_org:
+            assert org == test_org
 
     # delete
     random_machine = random.choice(list(machine_ids_in_test_org))

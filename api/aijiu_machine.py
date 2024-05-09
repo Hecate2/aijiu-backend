@@ -39,11 +39,12 @@ async def get_machines_by_gps(auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         subquery = select(
             GPSPosition,
+            AijiuMachine.org,
             func.rank().over(
                 order_by=GPSPosition.timestamp.desc(),
                 partition_by=GPSPosition.client_id
             ).label('rank'),
-        ).subquery()
+        ).join(AijiuMachine).subquery()
         result = await s.execute(select(*([*subquery.columns][:-1])).filter(subquery.c.rank == 1))
     return jsonify(result.all())
 
