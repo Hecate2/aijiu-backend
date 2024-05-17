@@ -1,8 +1,10 @@
+import datetime
 from typing import Union, Dict
 import asyncio
-from utils import jsonify
+from utils import jsonify, datetime_utc_8
 from fastapi import APIRouter, HTTPException, Depends
-from database.models import AijiuMachine, Org, GPSPosition, BackendPermissionByRole
+from database.models import AijiuMachine, Org, BackendPermissionByRole
+from database.models import AitiaoPasswd, AitiaoLife, AijiuStartEnd, AijiuTemperature, CatalystTemperature, FanRpm, GPSPosition
 from database.connection import db
 from sqlalchemy import select, func, update, delete
 from api.version import API_PREFIX
@@ -80,8 +82,27 @@ async def get_machines_online(auth = Depends(JWTBearer())) -> Dict[str, str]:
 @router.get('/id/{id}/')
 async def get_machine_by_id(id: str, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
-        result = await s.execute(select(AijiuMachine.org, AijiuMachine.id, AijiuMachine.createTime).filter(AijiuMachine.id == id))
-        return jsonify(result.one_or_none())
+        machine = jsonify((await s.execute(select(
+            AijiuMachine.org, AijiuMachine.id, AijiuMachine.createTime,
+        ).filter(AijiuMachine.id == id))).one_or_none())
+        if not machine:
+            return machine
+        fan_rpm = jsonify((await s.execute(
+            select(FanRpm.rpm, FanRpm.timestamp)
+            .filter(FanRpm.client_id == id)
+            .filter(FanRpm.timestamp >= datetime_utc_8() - datetime.timedelta(days=100)))).all())
+        catalyst_temperature = jsonify((await s.execute(
+            select(CatalystTemperature.temperature, CatalystTemperature.timestamp)
+            .filter(CatalystTemperature.client_id == id)
+            .filter(CatalystTemperature.timestamp >= datetime_utc_8() - datetime.timedelta(days=100)))).all())
+        aijiu_temperature = jsonify((await s.execute(
+            select(AijiuTemperature.temperature, AijiuTemperature.timestamp)
+            .filter(AijiuTemperature.client_id == id)
+            .filter(AijiuTemperature.timestamp >= datetime_utc_8() - datetime.timedelta(days=100)))).all())
+        machine['fanRpm'] = fan_rpm
+        machine['catalystTemperature'] = catalyst_temperature
+        machine['aijiuTemperature'] = aijiu_temperature
+        return machine
 
 @router.post('/id/{id}/{org}/')
 @allow({BackendPermissionByRole.write_my_org_aijiu_client})

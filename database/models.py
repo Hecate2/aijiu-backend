@@ -186,4 +186,4 @@ class GPSPosition(Base):
     degreeE = Column(DECIMAL, nullable=False)
     degreeN = Column(DECIMAL, nullable=False)
 
-time_series_tables = {AitiaoLife, AijiuStartEnd, AijiuTemperature, CatalystTemperature, FanRpm, GPSPosition}
+time_series_tables = {AitiaoLife, AijiuStartEnd, AijiuTemperature, AijiuRemainingTime, CatalystTemperature, FanRpm, GPSPosition}
