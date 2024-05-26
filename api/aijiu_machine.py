@@ -25,6 +25,7 @@ async def get_machines(filter: str = '', case: bool = False, auth = Depends(JWTB
         else:
             result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.createTime).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
     result = jsonify(result.all())
+    # connected = await get_machines_online()
     connected = await connected
     for c in result:
         if c['id'] in connected:
@@ -72,7 +73,8 @@ async def get_machines_online(auth = Depends(JWTBearer())) -> Dict[str, str]:
     if not is_prod_env():
         return all_data
     while True:
-        result = (await EMQX_HTTP_CLIENT.get(f'/clients?limit=1000&conn_state=connected&page={page}')).json()
+        result = await EMQX_HTTP_CLIENT.get(f'/clients?limit=1000&conn_state=connected&page={page}')
+        result = result.json()
         for c in result['data']:
             all_data[c['clientid']] = c['connected_at']
         if not result['meta']['hasnext']:
