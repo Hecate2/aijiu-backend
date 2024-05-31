@@ -82,7 +82,7 @@ async def get_machines_online(auth = Depends(JWTBearer())) -> Dict[str, str]:
         page += 1
 
 @router.get('/id/{id}/')
-async def get_machine_by_id(id: str, auth = Depends(JWTBearer())):
+async def get_machine_by_id(id: str, days: int = 100, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         machine = jsonify((await s.execute(select(
             AijiuMachine.org, AijiuMachine.id, AijiuMachine.createTime,
@@ -92,17 +92,22 @@ async def get_machine_by_id(id: str, auth = Depends(JWTBearer())):
         fan_rpm = jsonify((await s.execute(
             select(FanRpm.rpm, FanRpm.timestamp)
             .filter(FanRpm.client_id == id)
-            .filter(FanRpm.timestamp >= datetime_utc_8() - datetime.timedelta(days=100)))).all())
+            .filter(FanRpm.timestamp >= datetime_utc_8() - datetime.timedelta(days=days)))).all())
         catalyst_temperature = jsonify((await s.execute(
             select(CatalystTemperature.temperature, CatalystTemperature.timestamp)
             .filter(CatalystTemperature.client_id == id)
-            .filter(CatalystTemperature.timestamp >= datetime_utc_8() - datetime.timedelta(days=100)))).all())
+            .filter(CatalystTemperature.timestamp >= datetime_utc_8() - datetime.timedelta(days=days)))).all())
+        aitiao_life = jsonify((await s.execute(
+            select(AitiaoLife.aitiao_life, AitiaoLife.timestamp)
+            .filter(AitiaoLife.client_id == id)
+            .filter(AitiaoLife.timestamp >= datetime_utc_8() - datetime.timedelta(days=days)))).all())
         aijiu_temperature = jsonify((await s.execute(
             select(AijiuTemperature.temperature, AijiuTemperature.timestamp)
             .filter(AijiuTemperature.client_id == id)
-            .filter(AijiuTemperature.timestamp >= datetime_utc_8() - datetime.timedelta(days=100)))).all())
+            .filter(AijiuTemperature.timestamp >= datetime_utc_8() - datetime.timedelta(days=days)))).all())
         machine['fanRpm'] = fan_rpm
         machine['catalystTemperature'] = catalyst_temperature
+        machine['aitiaoLife'] = aitiao_life
         machine['aijiuTemperature'] = aijiu_temperature
         return machine
 
