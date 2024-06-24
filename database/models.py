@@ -28,8 +28,10 @@ class AijiuMachine(Base):
     '''
     __tablename__ = 'aijiumachine'
     id = Column(String(64), primary_key=True)
-    org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='NO ACTION'), nullable=False)
+    org = Column(String, ForeignKey(Org.name, onupdate='CASCADE', ondelete='NO ACTION'), nullable=False, index=True)
     org2client = relationship(Org.__name__, backref='client2org')
+    model = Column(String, index=True)
+    remark = Column(String)
     createTime = Column(DateTime, default=datetime_utc_8)
     
     def __str__(self):

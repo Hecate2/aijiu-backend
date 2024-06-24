@@ -21,9 +21,9 @@ async def get_machines(filter: str = '', case: bool = False, auth = Depends(JWTB
     connected = asyncio.create_task(get_machines_online())
     async with db.create_session_readonly() as s:
         if case:  # case sensitive
-            result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.createTime).filter(AijiuMachine.id.like(f'%{filter}%')))
+            result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.model, AijiuMachine.remark, AijiuMachine.createTime).filter(AijiuMachine.id.like(f'%{filter}%')))
         else:
-            result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.createTime).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
+            result = await s.execute(select(AijiuMachine.id, AijiuMachine.org, AijiuMachine.model, AijiuMachine.remark, AijiuMachine.createTime).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
     result = jsonify(result.all())
     # connected = await get_machines_online()
     connected = await connected
@@ -56,9 +56,9 @@ async def get_machines_by_gps(auth = Depends(JWTBearer())):
 async def get_machines_in_org(org: str, filter: str = '', case: bool = False, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         if case:  # case sensitive
-            result = await s.execute(select(AijiuMachine.id, AijiuMachine.createTime).filter(AijiuMachine.org == org).filter(AijiuMachine.id.like(f'%{filter}%')))
+            result = await s.execute(select(AijiuMachine.id, AijiuMachine.createTime, AijiuMachine.model, AijiuMachine.remark).filter(AijiuMachine.org == org).filter(AijiuMachine.id.like(f'%{filter}%')))
         else:
-            result = await s.execute(select(AijiuMachine.id, AijiuMachine.createTime).filter(AijiuMachine.org == org).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
+            result = await s.execute(select(AijiuMachine.id, AijiuMachine.createTime, AijiuMachine.model, AijiuMachine.remark).filter(AijiuMachine.org == org).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
 @router.get('/online')
@@ -85,7 +85,7 @@ async def get_machines_online(auth = Depends(JWTBearer())) -> Dict[str, str]:
 async def get_machine_by_id(id: str, days: int = 100, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         machine = jsonify((await s.execute(select(
-            AijiuMachine.org, AijiuMachine.id, AijiuMachine.createTime,
+            AijiuMachine.org, AijiuMachine.id, AijiuMachine.createTime, AijiuMachine.model, AijiuMachine.remark
         ).filter(AijiuMachine.id == id))).one_or_none())
         if not machine:
             return machine
@@ -121,6 +121,18 @@ async def create_machine_for_org(id: str, org: Union[str, None], auth = Depends(
             if org and (await s.execute(select(Org).filter(Org.name == org))).one_or_none() is None:
                 raise HTTPException(400, f"{Org.__name__} {org} does not exist")
             s.add(AijiuMachine(id=id, org=org))
+
+@router.patch('/remark/{id}/{remark}')
+async def set_machine_remark(id: str, remark: str, auth = Depends(JWTBearer())):
+    if not remark: remark = None
+    async with db.create_session() as s:
+        await s.execute(update(AijiuMachine).where(AijiuMachine.id==id).values(remark=remark))
+
+@router.patch('/model/{id}/{model}')
+async def set_machine_model(id: str, model: str, auth = Depends(JWTBearer())):
+    if not model: model = None
+    async with db.create_session() as s:
+        await s.execute(update(AijiuMachine).where(AijiuMachine.id==id).values(model=model))
 
 @router.patch('/id/{id}/{neworg}/')
 async def change_machine_org(id: str, neworg: str, auth = Depends(JWTBearer())):

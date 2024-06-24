@@ -29,9 +29,17 @@ async def test_aijiu_machine(client: AsyncClient):  # nosec
     for machine in machine_ids_in_root:
         response = await client.post(f"machines/id/{machine}/{ROOT}")
         assert response.status_code == 200
+        response = await client.patch(f"machines/model/{machine}/秦")
+        assert response.status_code == 200
+        response = await client.patch(f"machines/remark/{machine}/买菜车")
+        assert response.status_code == 200
     machine_ids_in_test_org = {'test_machine_in_test_org', 'Machine1_in_test_org', 'machine2_in_test_org'}
     for machine in machine_ids_in_test_org:
         response = await client.post(f"machines/id/{machine}/{test_org}")
+        assert response.status_code == 200
+        response = await client.patch(f"machines/model/{machine}/汉")
+        assert response.status_code == 200
+        response = await client.patch(f"machines/remark/{machine}/黑色高级轿车")
         assert response.status_code == 200
     # No duplicate machine id
     for _ in range(5):
@@ -68,6 +76,8 @@ async def test_aijiu_machine(client: AsyncClient):  # nosec
         result = (await client.get(f"machines?filter={filter}&case=1")).json()
         for machine in result:
             assert filter in machine['id']
+            assert "model" in machine
+            assert "remark" in machine
     await get_machines()
     
     assert (await client.get(f"machines/orgs/不存在的org")).json() == []
@@ -77,6 +87,12 @@ async def test_aijiu_machine(client: AsyncClient):  # nosec
         result = (await client.get(f"machines/id/{random_machine}")).json()
         assert result['id'] == random_machine
         assert is_recent_time(result['createTime'])
+        if result['model'] == '秦':
+            assert result['remark'] == '买菜车'
+        elif result['model'] == '汉':
+            assert result['remark'] == '黑色高级轿车'
+        else:
+            raise ValueError(f"Unexpected model {result['model']} and remark {result['remark']}")
     random_machine = random.choice(list(machine_ids_in_root))
     result = (await client.get(f"machines/orgs/{ROOT}")).json()
     assert random_machine in {i['id'] for i in result }
