@@ -30,6 +30,8 @@ async def get_machines(filter: str = '', case: bool = False, auth = Depends(JWTB
     for c in result:
         if c['id'] in connected:
             c['connectedAt'] = connected[c['id']]
+        # else:
+        #     c['connectedAt'] = '1970-01-01T00:00:00.000+00:00'
     return result
 
 @router.get('/gps')
