@@ -27,13 +27,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-async def app_root():
-    return {"Root": "艾灸后端API"}
+# @app.get("/")
+# async def app_root():
+#     return {"Root": "艾灸后端API"}
 
 PORT = 8000
 
 if __name__ == "__main__":
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/", StaticFiles(directory="dist", html = True), name="static")
     # asyncio.run(init_tables())
     connection.db = connection.prod_db
     import asyncio
