@@ -81,14 +81,13 @@ class JWTBearer(HTTPBearer):
 
     async def __call__(self, request: Request):
         credentials: HTTPAuthorizationCredentials = await super(JWTBearer, self).__call__(request)
-        if credentials:
-            if not credentials.scheme == "Bearer":
-                raise HTTPException(status_code=403, detail="Invalid authentication scheme. Try login again.")
-            if not (payload := self.verify_jwt(credentials.credentials)):
-                raise HTTPException(status_code=403, detail="Invalid token or expired token. Try login again.")
-            return payload
-        else:
+        if not credentials:
             raise HTTPException(status_code=403, detail="Invalid authorization code. Try login again.")
+        if not credentials.scheme == "Bearer":
+            raise HTTPException(status_code=403, detail="Invalid authentication scheme. Try login again.")
+        if not (payload := self.verify_jwt(credentials.credentials)):
+            raise HTTPException(status_code=403, detail="Invalid token or expired token. Try login again.")
+        return payload
 
     @staticmethod
     def verify_jwt(jwtoken: str) -> dict:
@@ -115,7 +114,7 @@ def allow(permissions: Iterable[InstrumentedAttribute], super_permissions: Itera
             same_org: bool = User.org.name in kwargs and kwargs[User.org.name] == auth[User.org.name]
             if allow_self and User.name.name in kwargs and kwargs[User.name.name] == auth[User.name.name] and same_org:
                 # self permission
-                return func(*args, **kwargs)
+                return await func(*args, **kwargs)
             async with db.create_session_readonly() as s:
                 role = select(User.role).filter(User.org == auth['org']).filter(User.name == auth['name']).scalar_subquery()
                 result = (await s.execute(select(*permissions, *super_permissions).filter(BackendPermissionByRole.role == role))).one()
