@@ -31,7 +31,7 @@ app.add_middleware(
 # async def app_root():
 #     return {"Root": "艾灸后端API"}
 
-PORT = 8000
+PORT = 58000
 
 if __name__ == "__main__":
     from fastapi.staticfiles import StaticFiles
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     mqtt.mqtt_data_subscribe.init_app(app)
     from uvicorn import Config, Server
     loop = asyncio.get_event_loop()
-    config = Config(app=app, loop="asyncio")
+    config = Config(app=app, loop="asyncio", port=PORT)
     server = Server(config)
     loop.run_until_complete(connection.init_tables(engine=connection.prod_engine))
     loop.run_until_complete(server.serve())
