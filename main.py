@@ -34,8 +34,13 @@ app.add_middleware(
 PORT = 58000
 
 if __name__ == "__main__":
+    FRONTEND_FILES_DIR = "dist"
     from fastapi.staticfiles import StaticFiles
-    app.mount("/", StaticFiles(directory="dist", html = True), name="static")
+    if not os.path.isdir(FRONTEND_FILES_DIR):
+        os.makedirs(FRONTEND_FILES_DIR)
+    if not os.listdir(FRONTEND_FILES_DIR):
+        print("没有前端文件。必须运行单独的前端服务器")
+    app.mount("/", StaticFiles(directory=FRONTEND_FILES_DIR, html = True), name="static")
     # asyncio.run(init_tables())
     connection.db = connection.prod_db
     import asyncio
