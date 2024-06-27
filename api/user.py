@@ -22,14 +22,14 @@ async def get_users(org: str, filter: str = '', case: bool = False, auth = Depen
             result = await s.execute(select(User.org, User.name, User.role, User.createTime).filter(User.org == org).filter(func.lower(User.name).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
-@router.get('/{org}/{name}')
+@router.get('/{org}/{name}/')
 @allow({BackendPermissionByRole.read_my_org_user}, super_permissions={BackendPermissionByRole.super_read})
 async def get_user(org: str, name: str, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         result = await s.execute(select(User.org, User.name, User.role, User.createTime).filter(User.org == org).filter(User.name == name))
         return jsonify(result.one_or_none())
 
-@router.post('/{org}/{name}')
+@router.post('/{org}/{name}/')
 @allow({BackendPermissionByRole.write_my_org_user}, super_permissions={BackendPermissionByRole.super_read})
 async def create_user(org: str, name: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:
@@ -38,7 +38,7 @@ async def create_user(org: str, name: str, auth = Depends(JWTBearer())):
                 raise HTTPException(400, f"{User.__name__} {name} already exists")
             s.add(User(name=name, org=org))
 
-@router.patch('/{org}/{username}/role/{new_role}')
+@router.patch('/{org}/{username}/role/{new_role}/')
 @allow({BackendPermissionByRole.write_my_org_user})
 async def change_user_role(org: str, username: str, new_role: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:
@@ -49,7 +49,7 @@ async def change_user_role(org: str, username: str, new_role: str, auth = Depend
             await s.execute(update(User).filter(User.org == org).where(User.name == username).values(role=new_role))
             
 
-@router.patch('/{org}/{name}/{newname}')
+@router.patch('/{org}/{name}/{newname}/')
 @allow({BackendPermissionByRole.write_my_org_user})
 async def rename_user(org: str, name: str, newname: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:
@@ -60,7 +60,7 @@ async def rename_user(org: str, name: str, newname: str, auth = Depends(JWTBeare
                 raise HTTPException(400, f"{User.__name__} {newname} exists")
             await s.execute(update(User).filter(User.org == org).where(User.name==name).values(name=newname))
 
-@router.delete('/{org}/{name}')
+@router.delete('/{org}/{name}/')
 @allow({BackendPermissionByRole.write_my_org_user}, allow_self=False)
 async def delete_user(org: str, name: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:

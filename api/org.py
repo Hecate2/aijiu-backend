@@ -22,28 +22,28 @@ async def get_orgs(filter: str = '', case: bool = False, auth = Depends(JWTBeare
             result = await s.execute(select(Org.name, Org.createTime, Org.authLevel).filter(func.lower(Org.name).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
-@router.get('/{name}')
+@router.get('/{name}/')
 async def get_org(name: str, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         result = await s.execute(select(Org.name, Org.createTime, Org.authLevel).filter(Org.name == name))
         return jsonify(result.one_or_none())
 
-@router.get('/children/{name}')
+@router.get('/children/{name}/')
 async def get_children_orgs(name: str, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         return jsonify((await s.execute(select(ParentOrg.org).filter(ParentOrg.parentOrg == name))).all())
 
-@router.get('/parent/{name}')
+@router.get('/parent/{name}/')
 async def get_parent_org(name: str, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         return jsonify((await s.execute(select(ParentOrg.parentOrg).filter(ParentOrg.org == name))).one_or_none())
 
-@router.get('/{org_name}/usercount')
+@router.get('/{org_name}/usercount/')
 async def get_org_user_count(org_name: str, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         return await s.scalar(select(func.count()).select_from(select(User).filter(User.org == org_name).subquery()))
 
-@router.post('/{name}')
+@router.post('/{name}/')
 async def create_org(name: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:
         async with s.begin():
@@ -52,7 +52,7 @@ async def create_org(name: str, auth = Depends(JWTBearer())):
             s.add(Org(name=name, authLevel=1))
             # TODO: decide authLevel and parent org
 
-@router.post('/{name}/{newname}')
+@router.post('/{name}/{newname}/')
 async def rename_org(name: str, newname: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:
         async with s.begin():
@@ -62,7 +62,7 @@ async def rename_org(name: str, newname: str, auth = Depends(JWTBearer())):
                 raise HTTPException(400, f"{Org.__name__} {newname} exists")
             await s.execute(update(Org).where(Org.name==name).values(name=newname))
 
-@router.delete('/{name}')
+@router.delete('/{name}/')
 async def delete_org(name: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:
         async with s.begin():

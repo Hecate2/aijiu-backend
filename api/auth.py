@@ -67,7 +67,7 @@ async def login(org: str = Body(), user: str = Body(), passwd = Body()):
 
 # TODO: change passwd
 
-@router.get('/permission/{org}/{username}')
+@router.get('/permission/{org}/{username}/')
 async def get_permission(org: str, username: str):
     async with db.create_session_readonly() as s:
         async with s.begin():

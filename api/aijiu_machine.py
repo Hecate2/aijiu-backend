@@ -34,7 +34,7 @@ async def get_machines(filter: str = '', case: bool = False, auth = Depends(JWTB
         #     c['connectedAt'] = '1970-01-01T00:00:00.000+00:00'
     return result
 
-@router.get('/gps')
+@router.get('/gps/')
 @allow({}, super_permissions={BackendPermissionByRole.super_read})
 async def get_machines_by_gps(auth = Depends(JWTBearer())):
 # async def get_machines_by_gps():
@@ -63,7 +63,7 @@ async def get_machines_in_org(org: str, filter: str = '', case: bool = False, au
             result = await s.execute(select(AijiuMachine.id, AijiuMachine.createTime, AijiuMachine.model, AijiuMachine.remark).filter(AijiuMachine.org == org).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
-@router.get('/online')
+@router.get('/online/')
 # @allow({}, super_permissions={BackendPermissionByRole.super_read})
 async def get_machines_online(auth = Depends(JWTBearer())) -> Dict[str, str]:
     '''
@@ -124,13 +124,13 @@ async def create_machine_for_org(id: str, org: Union[str, None], auth = Depends(
                 raise HTTPException(400, f"{Org.__name__} {org} does not exist")
             s.add(AijiuMachine(id=id, org=org))
 
-@router.patch('/remark/{id}/{remark}')
+@router.patch('/remark/{id}/{remark}/')
 async def set_machine_remark(id: str, remark: str, auth = Depends(JWTBearer())):
     if not remark: remark = None
     async with db.create_session() as s:
         await s.execute(update(AijiuMachine).where(AijiuMachine.id==id).values(remark=remark))
 
-@router.patch('/model/{id}/{model}')
+@router.patch('/model/{id}/{model}/')
 async def set_machine_model(id: str, model: str, auth = Depends(JWTBearer())):
     if not model: model = None
     async with db.create_session() as s:
