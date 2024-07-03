@@ -15,7 +15,7 @@ router = APIRouter(
     tags = ['machines']
 )
 
-@router.get('/')
+@router.get('')
 @allow({}, super_permissions={BackendPermissionByRole.super_read})
 async def get_machines(filter: str = '', case: bool = False, auth = Depends(JWTBearer())):
     connected = asyncio.create_task(get_machines_online())
@@ -34,7 +34,7 @@ async def get_machines(filter: str = '', case: bool = False, auth = Depends(JWTB
         #     c['connectedAt'] = '1970-01-01T00:00:00.000+00:00'
     return result
 
-@router.get('/gps/')
+@router.get('/gps')
 @allow({}, super_permissions={BackendPermissionByRole.super_read})
 async def get_machines_by_gps(auth = Depends(JWTBearer())):
 # async def get_machines_by_gps():
@@ -53,7 +53,7 @@ async def get_machines_by_gps(auth = Depends(JWTBearer())):
         result = await s.execute(select(*([*subquery.columns][:-1])).filter(subquery.c.rank == 1))
     return jsonify(result.all())
 
-@router.get('/orgs/{org}/')
+@router.get('/orgs/{org}')
 @allow({BackendPermissionByRole.read_my_org_aijiu_client}, super_permissions={BackendPermissionByRole.super_read})
 async def get_machines_in_org(org: str, filter: str = '', case: bool = False, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
@@ -63,7 +63,7 @@ async def get_machines_in_org(org: str, filter: str = '', case: bool = False, au
             result = await s.execute(select(AijiuMachine.id, AijiuMachine.createTime, AijiuMachine.model, AijiuMachine.remark).filter(AijiuMachine.org == org).filter(func.lower(AijiuMachine.id).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
-@router.get('/online/')
+@router.get('/online')
 # @allow({}, super_permissions={BackendPermissionByRole.super_read})
 async def get_machines_online(auth = Depends(JWTBearer())) -> Dict[str, str]:
     '''
@@ -83,7 +83,7 @@ async def get_machines_online(auth = Depends(JWTBearer())) -> Dict[str, str]:
             return all_data
         page += 1
 
-@router.get('/id/{id}/')
+@router.get('/id/{id}')
 async def get_machine_by_id(id: str, days: int = 100, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         machine = jsonify((await s.execute(select(
@@ -113,7 +113,7 @@ async def get_machine_by_id(id: str, days: int = 100, auth = Depends(JWTBearer()
         machine['aijiuTemperature'] = aijiu_temperature
         return machine
 
-@router.post('/id/{id}/{org}/')
+@router.post('/id/{id}/{org}')
 @allow({BackendPermissionByRole.write_my_org_aijiu_client})
 async def create_machine_for_org(id: str, org: Union[str, None], auth = Depends(JWTBearer())):
     async with db.create_session() as s:
@@ -124,19 +124,19 @@ async def create_machine_for_org(id: str, org: Union[str, None], auth = Depends(
                 raise HTTPException(400, f"{Org.__name__} {org} does not exist")
             s.add(AijiuMachine(id=id, org=org))
 
-@router.patch('/remark/{id}/{remark}/')
+@router.patch('/remark/{id}/{remark}')
 async def set_machine_remark(id: str, remark: str, auth = Depends(JWTBearer())):
     if not remark: remark = None
     async with db.create_session() as s:
         await s.execute(update(AijiuMachine).where(AijiuMachine.id==id).values(remark=remark))
 
-@router.patch('/model/{id}/{model}/')
+@router.patch('/model/{id}/{model}')
 async def set_machine_model(id: str, model: str, auth = Depends(JWTBearer())):
     if not model: model = None
     async with db.create_session() as s:
         await s.execute(update(AijiuMachine).where(AijiuMachine.id==id).values(model=model))
 
-@router.patch('/id/{id}/{neworg}/')
+@router.patch('/id/{id}/{neworg}')
 async def change_machine_org(id: str, neworg: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:
         async with s.begin():
@@ -146,7 +146,7 @@ async def change_machine_org(id: str, neworg: str, auth = Depends(JWTBearer())):
                 raise HTTPException(400, f"{Org.__name__} {neworg} does not exist")
             await s.execute(update(AijiuMachine).where(AijiuMachine.id==id).values(org=neworg))
 
-@router.delete('/id/{id}/')
+@router.delete('/id/{id}')
 @allow({BackendPermissionByRole.write_my_org_aijiu_client})
 async def delete_machine(id: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:

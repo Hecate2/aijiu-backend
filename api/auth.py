@@ -51,7 +51,7 @@ router = APIRouter(
     tags = ['auth']
 )
 
-@router.post('/login/')
+@router.post('/login')
 async def login(org: str = Body(), user: str = Body(), passwd = Body()):
     async with db.create_session_readonly() as s:
         userObj = (await s.execute(select(User.org, User.name, User.role, User.passwd).filter(User.org == org).filter(User.name == user))).one_or_none()
@@ -67,7 +67,7 @@ async def login(org: str = Body(), user: str = Body(), passwd = Body()):
 
 # TODO: change passwd
 
-@router.get('/permission/{org}/{username}/')
+@router.get('/permission/{org}/{username}')
 async def get_permission(org: str, username: str):
     async with db.create_session_readonly() as s:
         async with s.begin():
