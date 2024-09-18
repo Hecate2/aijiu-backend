@@ -22,7 +22,7 @@ async def get_orgs(filter: str = '', case: bool = False, auth = Depends(JWTBeare
             result = await s.execute(select(Org.name, Org.createTime, Org.authLevel).filter(func.lower(Org.name).like(func.lower(f'%{filter}%'))))
         return jsonify(result.all())
 
-@router.get('/{name}/')
+@router.get('/{name}')
 async def get_org(name: str, auth = Depends(JWTBearer())):
     async with db.create_session_readonly() as s:
         result = await s.execute(select(Org.name, Org.createTime, Org.authLevel).filter(Org.name == name))
@@ -56,8 +56,10 @@ async def create_org(name: str, auth = Depends(JWTBearer())):
 async def rename_org(name: str, newname: str, auth = Depends(JWTBearer())):
     async with db.create_session() as s:
         async with s.begin():
-            if (await s.execute(select(Org).filter(Org.name == name))).one_or_none() is None:
+            if (org := (await s.execute(select(Org.authLevel).filter(Org.name == name))).one_or_none()) is None:
                 raise HTTPException(400, f"{Org.__name__} {name} does not exist")
+            if org.authLevel == 0:
+                raise HTTPException(400, f"Cannot rename root org `{name}`")
             if (await s.execute(select(Org).filter(Org.name == newname))).one_or_none():
                 raise HTTPException(400, f"{Org.__name__} {newname} exists")
             await s.execute(update(Org).where(Org.name==name).values(name=newname))

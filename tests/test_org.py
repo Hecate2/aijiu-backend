@@ -50,6 +50,10 @@ async def test_org(client: AsyncClient):  # nosec
     assert (await client.get("orgs/hospitalUpdated")).json()['name'] == 'hospitalUpdated'
     assert (await client.post("orgs/test_org/hospitalUpdated")).status_code >= 400
     assert (await client.post("orgs/Hospital1/hospitalUpdated")).status_code >= 400
+    # cannot rename root org
+    result = await client.post("orgs/root/cannotRenameRoot")
+    assert result.status_code >= 400
+    assert result.json()["detail"] == 'Cannot rename root org `root`'
     
     # count user
     org_name = 'hospitalUpdated'
