@@ -40,6 +40,14 @@ if __name__ == "__main__":
         os.makedirs(FRONTEND_FILES_DIR)
     if not os.listdir(FRONTEND_FILES_DIR):
         print("没有前端文件。必须运行单独的前端服务器")
+    from fastapi.responses import RedirectResponse, PlainTextResponse
+    import starlette.requests
+    from starlette.exceptions import HTTPException as StarletteHTTPException
+    @app.exception_handler(404)
+    async def custom_http_exception_handler(request: starlette.requests.Request, exc: StarletteHTTPException):
+        if not request.url.path.startswith('/api'):
+            return RedirectResponse("/")
+        return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
     app.mount("/", StaticFiles(directory=FRONTEND_FILES_DIR, html = True), name="static")
     # asyncio.run(init_tables())
     connection.db = connection.prod_db
@@ -48,7 +56,7 @@ if __name__ == "__main__":
     mqtt.mqtt_data_subscribe.init_app(app)
     from uvicorn import Config, Server
     loop = asyncio.get_event_loop()
-    config = Config(app=app, loop="asyncio", port=PORT)
+    config = Config(app=app, loop="asyncio", host='0.0.0.0', port=PORT)
     server = Server(config)
     loop.run_until_complete(connection.init_tables(engine=connection.prod_engine))
     loop.run_until_complete(server.serve())
