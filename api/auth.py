@@ -2,7 +2,7 @@ import os
 from functools import wraps
 from hashlib import sha512
 from typing import Dict, Union, Iterable
-from jose import jwt, JWTError
+import jwt
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Body, HTTPException
 from api.version import API_PREFIX
