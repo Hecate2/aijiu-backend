@@ -11,5 +11,5 @@ httpx==0.28.0
 PyJWT==2.10.1
 python_dateutil==2.9.0.post0
 sqlalchemy_schemadisplay==2.0
-starlette==0.47.2
+starlette==0.49.1
 uvicorn==0.32.1
